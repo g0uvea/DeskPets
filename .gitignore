@@ -1,0 +1,63 @@
+# .NET build
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+
+# Visual Studio
+.vs/
+
+# JetBrains Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# Zed
+.zed/
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Coverage
+coverage/
+coverage*.xml
+
+# Logs
+*.log
+
+# Temporary files
+*~
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.directory
+
+# Environment / local configuration
+.env
+.env.*
+!.env.example
+
+# Local app settings
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Publish output
+**/publish/
+
+# User-specific launch settings
+**/Properties/launchSettings.json
