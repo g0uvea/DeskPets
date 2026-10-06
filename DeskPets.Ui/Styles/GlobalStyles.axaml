@@ -2,9 +2,60 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <Styles.Resources>
+        <!-- Dimensões personalizadas dos Sliders para FluentTheme -->
+        <x:Double x:Key="SliderTrackThemeHeight">8</x:Double>
+        <CornerRadius x:Key="SliderTrackCornerRadius">4</CornerRadius>
+        <x:Double x:Key="SliderThumbWidth">22</x:Double>
+        <x:Double x:Key="SliderThumbHeight">22</x:Double>
+
+        <!-- Brushes do Slider (Roxo Azulado / Dark Violet) -->
+        <SolidColorBrush x:Key="SliderTrackFill" Color="#352D46" />
+        <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#3E3452" />
+        <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#44395A" />
+        <SolidColorBrush x:Key="SliderTrackValueFill" Color="#8B6CCF" />
+        <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#9D7CE0" />
+        <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#BFA5FF" />
+
+        <!-- Brushes do Thumb do Slider (substitui o verde padrão) -->
+        <SolidColorBrush x:Key="SliderThumbBackground" Color="#8B6CCF" />
+        <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#9D7CE0" />
+        <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#BFA5FF" />
+        <SolidColorBrush x:Key="SliderThumbBorderBrush" Color="#EADBFF" />
+
+        <!-- Brushes do ToggleSwitch -->
+        <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#8B6CCF" />
+        <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#9D7CE0" />
+        <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#BFA5FF" />
+        <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="#352D46" />
+        <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#403654" />
+        <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="#483D5E" />
+        <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#594C73" />
+        <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#7E6C99" />
+        <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#C4B5FD" />
+    </Styles.Resources>
+
     <!-- Global Window & Typography -->
     <Style Selector="Window">
         <Setter Property="FontFamily" Value="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif" />
+    </Style>
+
+    <!-- Desativação de animações na interface quando configurado -->
+    <Style Selector="Window.no-animations Button.traffic-button /template/ Border#PART_TrafficCircle">
+        <Setter Property="Transitions">
+            <Transitions />
+        </Setter>
+    </Style>
+    <Style Selector="Window.no-animations Button.tab-pill /template/ Border#PART_TabBorder">
+        <Setter Property="Transitions">
+            <Transitions />
+        </Setter>
+    </Style>
+    <Style Selector="Window.no-animations Button.asset-card-btn /template/ Border#PART_CardBorder">
+        <Setter Property="Transitions">
+            <Transitions />
+        </Setter>
     </Style>
 
     <!-- Compact MacOS Traffic Light Buttons (22x22px, CornerRadius=11) -->
@@ -133,16 +184,16 @@
         <Setter Property="Background" Value="#564873" />
     </Style>
 
-    <!-- Inactive Tab Pill (#251F31 e texto #594C73) -->
+    <!-- Inactive Tab Pill (#251F31 e texto nítido #8F7EA9) -->
     <Style Selector="Button.tab-pill.tab-pill-inactive">
         <Setter Property="Background" Value="#251F31" />
-        <Setter Property="Foreground" Value="#594C73" />
+        <Setter Property="Foreground" Value="#8F7EA9" />
     </Style>
     <Style Selector="Button.tab-pill.tab-pill-inactive:pointerover">
-        <Setter Property="Foreground" Value="#736394" />
+        <Setter Property="Foreground" Value="#EADBFF" />
     </Style>
     <Style Selector="Button.tab-pill.tab-pill-inactive:pointerover /template/ Border#PART_TabBorder">
-        <Setter Property="Background" Value="#2E263D" />
+        <Setter Property="Background" Value="#352D46" />
     </Style>
 
     <!-- Asset Card Button Style (148x148, rx=15) -->
@@ -221,18 +272,78 @@
         <Setter Property="Margin" Value="0,0,0,8" />
     </Style>
 
-    <!-- Dark Violet Slider Theme -->
+    <!-- Slider Custom Styling: Mais espesso (8px) e Thumb Roxo Azulado (#8B6CCF) -->
     <Style Selector="Slider">
-        <Setter Property="Foreground" Value="#7E6C99" />
+        <Setter Property="Foreground" Value="#8B6CCF" />
+        <Setter Property="Background" Value="#352D46" />
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
-    <!-- Dark Violet ToggleSwitch Theme -->
+    <!-- Track Inativo (Fundo da barra do Slider - 8px de espessura com bordas arredondadas) -->
+    <Style Selector="Slider:horizontal /template/ Border#TrackBackground">
+        <Setter Property="Height" Value="8" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Background" Value="#352D46" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Track Ativo (Barra preenchida antes do thumb) -->
+    <Style Selector="Slider:horizontal /template/ RepeatButton#PART_DecreaseButton">
+        <Setter Property="Background" Value="#8B6CCF" />
+    </Style>
+    <Style Selector="Slider:horizontal /template/ RepeatButton#PART_DecreaseButton /template/ Border">
+        <Setter Property="Height" Value="8" />
+        <Setter Property="CornerRadius" Value="4,0,0,4" />
+        <Setter Property="Background" Value="#8B6CCF" />
+    </Style>
+
+    <!-- Slider Thumb / Holder: Roxo Azulado elegante, eliminando o verde -->
+    <Style Selector="Slider /template/ Thumb">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Background" Value="#8B6CCF" />
+        <Setter Property="BorderBrush" Value="#EADBFF" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="CornerRadius" Value="11" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="ClipToBounds" Value="False" />
+    </Style>
+
+    <Style Selector="Slider:pointerover /template/ Thumb">
+        <Setter Property="Background" Value="#9D7CE0" />
+        <Setter Property="BorderBrush" Value="#FFFFFF" />
+        <Setter Property="BorderThickness" Value="2.5" />
+    </Style>
+
+    <Style Selector="Slider:pressed /template/ Thumb">
+        <Setter Property="Background" Value="#BFA5FF" />
+        <Setter Property="BorderBrush" Value="#FFFFFF" />
+        <Setter Property="BorderThickness" Value="3" />
+    </Style>
+
+    <!-- Refined ToggleSwitch Theme (Roxo Azulado) -->
     <Style Selector="ToggleSwitch">
         <Setter Property="OnContent" Value="" />
         <Setter Property="OffContent" Value="" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ToggleSwitch /template/ Border#SwitchKnobBounds">
+        <Setter Property="Background" Value="#352D46" />
+        <Setter Property="BorderBrush" Value="#594C73" />
+        <Setter Property="BorderThickness" Value="1.5" />
+        <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="ToggleSwitch:pointerover /template/ Border#SwitchKnobBounds">
+        <Setter Property="BorderBrush" Value="#8B6CCF" />
     </Style>
     <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
-        <Setter Property="Background" Value="#7E6C99" />
+        <Setter Property="Background" Value="#8B6CCF" />
+        <Setter Property="BorderBrush" Value="#9D7CE0" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked:pointerover /template/ Border#SwitchKnobBounds">
+        <Setter Property="Background" Value="#9D7CE0" />
+        <Setter Property="BorderBrush" Value="#A78BFA" />
     </Style>
 
     <!-- Custom Numeric TextBox for FPS -->
@@ -253,23 +364,31 @@
     <Style Selector="TextBox.fps-input:focus /template/ Border#PART_BorderElement">
         <Setter Property="Background" Value="#403754" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="#7E6C99" />
+        <Setter Property="BorderBrush" Value="#8B6CCF" />
     </Style>
 
-    <!-- Preset Stop Button -->
+    <!-- Preset Stop Button com suporte a estado Ativo e melhor contraste -->
     <Style Selector="Button.stop-btn">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="#594C73" />
+        <Setter Property="Foreground" Value="#8F7EA9" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="Padding" Value="8,3" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Button.stop-btn:pointerover /template/ ContentPresenter">
-        <Setter Property="Foreground" Value="#EADBFF" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
         <Setter Property="Background" Value="#352D46" />
+    </Style>
+    <Style Selector="Button.stop-btn.stop-btn-active">
+        <Setter Property="Foreground" Value="#EADBFF" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="Button.stop-btn.stop-btn-active /template/ ContentPresenter">
+        <Setter Property="Foreground" Value="#EADBFF" />
+        <Setter Property="Background" Value="#4A3E63" />
     </Style>
 
     <!-- ScrollBar Styling -->

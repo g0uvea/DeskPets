@@ -29,7 +29,7 @@
                 <TextBlock
                     Text="{Binding ShopEmptyMessage}"
                     FontSize="13"
-                    Foreground="#594C73"
+                    Foreground="#8F7EA9"
                     HorizontalAlignment="Center"
                     TextAlignment="Center"
                     MaxWidth="400"

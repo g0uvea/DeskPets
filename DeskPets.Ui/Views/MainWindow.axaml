@@ -16,6 +16,7 @@
     WindowStartupLocation="CenterScreen"
     WindowDecorations="None"
     Topmost="{Binding IsAlwaysOnTop}"
+    Classes.no-animations="{Binding !EnableAnimations}"
     Background="Transparent"
     TransparencyLevelHint="Transparent,None">
 
@@ -23,27 +24,25 @@
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <!-- Outer Window Border with Rounded Corners (rx=10, fill=#25202F) -->
+    <!-- Outer Window Border with Rounded Corners (rx=12, fill=#1B1724) -->
     <Border
-        Background="#25202F"
-        CornerRadius="10"
+        Background="#1B1724"
+        CornerRadius="12"
         ClipToBounds="True"
         BorderBrush="#352D46"
         BorderThickness="1">
 
         <Grid>
-            <!-- Main Window Layout: Row 0 is 40px Header, Row 1 is Content -->
-            <Grid RowDefinitions="40, *">
+            <!-- Main Window Layout: Row 0 is 44px Header, Row 1 is Content -->
+            <Grid RowDefinitions="44, *">
 
                 <!-- Header / TitleBar (Modular UserControl) -->
                 <views:TitleBarView Grid.Row="0" />
 
-                <!-- Content Panel (Margin=5,6,5,5, Background=#1B1724, rx=10) -->
+                <!-- Content Panel -->
                 <Border
                     Grid.Row="1"
                     Background="#1B1724"
-                    CornerRadius="10"
-                    Margin="5,6,5,5"
                     ClipToBounds="True">
 
                     <Panel>

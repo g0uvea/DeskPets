@@ -33,7 +33,18 @@ public partial class MainViewModel : ViewModelBase
     // === Configurações dos Pets ===
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFps0Selected))]
+    [NotifyPropertyChangedFor(nameof(IsFps15Selected))]
+    [NotifyPropertyChangedFor(nameof(IsFps24Selected))]
+    [NotifyPropertyChangedFor(nameof(IsFps30Selected))]
+    [NotifyPropertyChangedFor(nameof(IsFps60Selected))]
     private int _fps = 60;
+
+    public bool IsFps0Selected => Fps == 0;
+    public bool IsFps15Selected => Fps == 15;
+    public bool IsFps24Selected => Fps == 24;
+    public bool IsFps30Selected => Fps == 30;
+    public bool IsFps60Selected => Fps == 60;
 
     [ObservableProperty]
     private int _fpsSliderIndex = 4; // index 4 = 60 FPS
@@ -46,6 +57,9 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isAlwaysOnTop = false;
+
+    [ObservableProperty]
+    private bool _enableAnimations = true;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPortugueseSelected))]
@@ -61,6 +75,8 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(LanguageSubtitle))]
     [NotifyPropertyChangedFor(nameof(AlwaysOnTopTitle))]
     [NotifyPropertyChangedFor(nameof(AlwaysOnTopSubtitle))]
+    [NotifyPropertyChangedFor(nameof(AnimationsTitle))]
+    [NotifyPropertyChangedFor(nameof(AnimationsSubtitle))]
     [NotifyPropertyChangedFor(nameof(ShopEmptyMessage))]
     [NotifyPropertyChangedFor(nameof(EmptyLocalMessage))]
     [NotifyPropertyChangedFor(nameof(SpawnPetMenuText))]
@@ -95,6 +111,11 @@ public partial class MainViewModel : ViewModelBase
         ? "Manter janela e pets sobrepostos a outros aplicativos"
         : "Keep window and pets floating above other applications";
 
+    public string AnimationsTitle => SelectedLanguage == "Português" ? "Animações na Interface" : "Interface Animations";
+    public string AnimationsSubtitle => SelectedLanguage == "Português"
+        ? "Ativar transições suaves e efeitos visuais"
+        : "Enable smooth transitions and visual effects";
+
     public string ShopEmptyMessage => SelectedLanguage == "Português"
         ? "Novos pets, skins e animações estarão disponíveis aqui em breve."
         : "New pets, skins and animations will be available here soon.";
@@ -118,6 +139,7 @@ public partial class MainViewModel : ViewModelBase
         SelectedLanguage = settings.Language ?? "Português";
         PetScale = Math.Clamp(settings.PetScale, 50, 200);
         IsAlwaysOnTop = settings.IsAlwaysOnTop;
+        EnableAnimations = settings.EnableAnimations;
         Fps = Math.Clamp(settings.Fps, 0, 60);
         FpsInputText = Fps.ToString();
         FpsSliderIndex = FindClosestStopIndex(Fps);
@@ -141,7 +163,8 @@ public partial class MainViewModel : ViewModelBase
             Fps = Fps,
             PetScale = PetScale,
             Language = SelectedLanguage,
-            IsAlwaysOnTop = IsAlwaysOnTop
+            IsAlwaysOnTop = IsAlwaysOnTop,
+            EnableAnimations = EnableAnimations
         };
 
         SettingsService.Save(settings);
@@ -205,6 +228,11 @@ public partial class MainViewModel : ViewModelBase
     }
 
     partial void OnIsAlwaysOnTopChanged(bool value)
+    {
+        SaveSettings();
+    }
+
+    partial void OnEnableAnimationsChanged(bool value)
     {
         SaveSettings();
     }

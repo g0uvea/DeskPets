@@ -4,13 +4,15 @@
     xmlns:vm="using:DeskPets.Ui.ViewModels"
     x:Class="DeskPets.Ui.Views.TitleBarView"
     x:DataType="vm:MainViewModel"
-    Height="40"
+    Height="44"
     Background="Transparent">
 
     <Border
-        Height="40"
+        Height="44"
         Background="#1B1724"
-        CornerRadius="9,9,0,0"
+        CornerRadius="12,12,0,0"
+        BorderBrush="#251F31"
+        BorderThickness="0,0,0,1"
         PointerPressed="OnTitleBarPointerPressed">
 
         <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
@@ -19,8 +21,8 @@
             <StackPanel
                 Grid.Column="0"
                 Orientation="Horizontal"
-                Spacing="5"
-                Margin="5,5,0,5">
+                Spacing="6"
+                Margin="7,7,0,7">
 
                 <Button
                     Classes="tab-pill"

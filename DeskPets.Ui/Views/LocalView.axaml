@@ -30,7 +30,7 @@
                         Text="+"
                         FontSize="28"
                         FontWeight="Bold"
-                        Foreground="#594C73"
+                        Foreground="#8F7EA9"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center" />
                 </Border>
@@ -38,7 +38,7 @@
                 <TextBlock
                     Text="{Binding EmptyLocalMessage}"
                     FontSize="13"
-                    Foreground="#594C73"
+                    Foreground="#8F7EA9"
                     TextAlignment="Center"
                     HorizontalAlignment="Center"
                     MaxWidth="380"
@@ -122,7 +122,7 @@
 
                                     <TextBlock
                                         Text="{Binding Name}"
-                                        Foreground="#594C73"
+                                        Foreground="#EADBFF"
                                         FontSize="12"
                                         FontWeight="Bold"
                                         HorizontalAlignment="Center"
