@@ -14,10 +14,26 @@ namespace DeskPets.Ui.Views;
 
 public partial class PetSpawnWindow : Window
 {
+    private const double BasePetSize = 220.0;
     private static int _spawnOffsetCounter = 0;
 
+    private readonly struct AnimationPlaybackFrame
+    {
+        public Bitmap Bitmap { get; }
+        public TimeSpan Duration { get; }
+
+        public AnimationPlaybackFrame(Bitmap bitmap, TimeSpan duration)
+        {
+            Bitmap = bitmap;
+            Duration = duration;
+        }
+    }
+
     private DispatcherTimer? _animationTimer;
-    private List<Bitmap> _frames = new();
+    private readonly List<AnimationPlaybackFrame> _animationFrames = new();
+    private readonly List<long> _cumulativeFrameEndMs = new();
+    private TimeSpan _totalAnimationDuration = TimeSpan.Zero;
+    private readonly System.Diagnostics.Stopwatch _playbackStopwatch = new();
     private int _currentFrameIndex = 0;
     private int _fps = 60;
 
@@ -37,12 +53,12 @@ public partial class PetSpawnWindow : Window
     public PetSpawnWindow(AssetItemViewModel pet, int fps, int scale, bool isAlwaysOnTop, bool enableAnimations) : this()
     {
         Pet = pet;
-        _fps = Math.Clamp(fps, 1, 60);
+        _fps = Math.Clamp(fps, 0, 60);
         IsAnimationsEnabled = enableAnimations;
         Topmost = isAlwaysOnTop;
 
         // Dimensões com trava de Min/Max para forçar modo flutuante em Tiling WMs no Linux (i3, sway, bspwm)
-        int size = Math.Max(48, (int)(140.0 * scale / 100.0));
+        int size = Math.Max(64, (int)(BasePetSize * scale / 100.0));
         Width = size;
         Height = size;
         MinWidth = size;
@@ -69,6 +85,20 @@ public partial class PetSpawnWindow : Window
 
         // Posiciona inteligentemente próximo à barra de tarefas / dock
         Opened += (s, e) => PositionNearTaskbar();
+    }
+
+    /// <summary>
+    /// Atualiza em tempo real a escala do pet flutuante caso o usuário ajuste o slider nas opções.
+    /// </summary>
+    public void UpdateScale(int scale)
+    {
+        int size = Math.Max(64, (int)(BasePetSize * scale / 100.0));
+        Width = size;
+        Height = size;
+        MinWidth = size;
+        MaxWidth = size;
+        MinHeight = size;
+        MaxHeight = size;
     }
 
     /// <summary>
@@ -115,15 +145,16 @@ public partial class PetSpawnWindow : Window
         IsAnimationsEnabled = enabled;
         if (!enabled)
         {
+            _playbackStopwatch.Stop();
             _animationTimer?.Stop();
-            if (_frames.Count > 0)
+            if (_animationFrames.Count > 0)
             {
-                PetImage.Source = _frames[0];
+                PetImage.Source = _animationFrames[0].Bitmap;
             }
         }
         else
         {
-            if (_frames.Count > 1 && (_animationTimer == null || !_animationTimer.IsEnabled))
+            if (_animationFrames.Count > 1 && _fps > 0)
             {
                 StartAnimationTimer();
             }
@@ -132,10 +163,18 @@ public partial class PetSpawnWindow : Window
 
     public void UpdateFps(int fps)
     {
-        _fps = Math.Clamp(fps, 1, 60);
-        if (_animationTimer != null)
+        _fps = Math.Clamp(fps, 0, 60);
+        if (_fps <= 0)
         {
-            _animationTimer.Interval = TimeSpan.FromSeconds(1.0 / _fps);
+            _playbackStopwatch.Stop();
+            _animationTimer?.Stop();
+        }
+        else
+        {
+            if (IsAnimationsEnabled && _animationFrames.Count > 1)
+            {
+                StartAnimationTimer();
+            }
         }
     }
 
@@ -143,28 +182,46 @@ public partial class PetSpawnWindow : Window
     {
         try
         {
-            var rawFrames = await MediaDecoder.ExtractFramesAsync(filePath, Math.Max(1, fps));
+            // Amostragem robusta com base em pelo menos 30 FPS para manter suavidade se o FPS for aumentado
+            var rawFrames = await MediaDecoder.ExtractFramesAsync(filePath, Math.Max(30, fps));
             if (rawFrames.Count > 1)
             {
-                var bitmaps = new List<Bitmap>();
+                var frames = new List<AnimationPlaybackFrame>();
+                var cumulative = new List<long>();
+                TimeSpan total = TimeSpan.Zero;
+                long runningMs = 0;
+
                 foreach (var rf in rawFrames)
                 {
                     using var ms = new MemoryStream(rf.Data);
-                    bitmaps.Add(new Bitmap(ms));
+                    var bmp = new Bitmap(ms);
+                    var dur = rf.Duration > TimeSpan.Zero ? rf.Duration : TimeSpan.FromMilliseconds(33);
+                    frames.Add(new AnimationPlaybackFrame(bmp, dur));
+                    total += dur;
+                    runningMs += (long)dur.TotalMilliseconds;
+                    cumulative.Add(runningMs);
                 }
-
-                _frames = bitmaps;
 
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    _animationFrames.Clear();
+                    _animationFrames.AddRange(frames);
+
+                    _cumulativeFrameEndMs.Clear();
+                    _cumulativeFrameEndMs.AddRange(cumulative);
+
+                    _totalAnimationDuration = total;
+                    _currentFrameIndex = 0;
+                    _playbackStopwatch.Restart();
+
                     FallbackIcon.IsVisible = false;
-                    if (IsAnimationsEnabled)
+                    if (IsAnimationsEnabled && _fps > 0)
                     {
                         StartAnimationTimer();
                     }
-                    else if (_frames.Count > 0)
+                    else if (_animationFrames.Count > 0)
                     {
-                        PetImage.Source = _frames[0];
+                        PetImage.Source = _animationFrames[0].Bitmap;
                     }
                 });
             }
@@ -174,6 +231,12 @@ public partial class PetSpawnWindow : Window
                 var singleBitmap = new Bitmap(ms);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    _animationFrames.Clear();
+                    _animationFrames.Add(new AnimationPlaybackFrame(singleBitmap, TimeSpan.FromSeconds(1)));
+                    _cumulativeFrameEndMs.Clear();
+                    _cumulativeFrameEndMs.Add(1000);
+                    _totalAnimationDuration = TimeSpan.FromSeconds(1);
+
                     PetImage.Source = singleBitmap;
                     FallbackIcon.IsVisible = false;
                 });
@@ -188,7 +251,18 @@ public partial class PetSpawnWindow : Window
     private void StartAnimationTimer()
     {
         _animationTimer?.Stop();
+        if (_fps <= 0 || _animationFrames.Count <= 1 || !IsAnimationsEnabled)
+        {
+            _playbackStopwatch.Stop();
+            return;
+        }
+
         int safeFps = Math.Clamp(_fps, 1, 60);
+        if (!_playbackStopwatch.IsRunning)
+        {
+            _playbackStopwatch.Start();
+        }
+
         _animationTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1.0 / safeFps)
@@ -199,10 +273,25 @@ public partial class PetSpawnWindow : Window
 
     private void OnAnimationTick(object? sender, EventArgs e)
     {
-        if (_frames.Count == 0) return;
+        if (_animationFrames.Count == 0 || _totalAnimationDuration <= TimeSpan.Zero) return;
 
-        _currentFrameIndex = (_currentFrameIndex + 1) % _frames.Count;
-        PetImage.Source = _frames[_currentFrameIndex];
+        long totalMs = (long)_totalAnimationDuration.TotalMilliseconds;
+        if (totalMs <= 0) return;
+
+        // Baseado em tempo real: a animação avança exatamente na velocidade 1.0x padrão, independente da frequência de atualização (FPS)
+        long elapsedMs = _playbackStopwatch.ElapsedMilliseconds % totalMs;
+
+        int targetIndex = 0;
+        while (targetIndex < _cumulativeFrameEndMs.Count - 1 && elapsedMs >= _cumulativeFrameEndMs[targetIndex])
+        {
+            targetIndex++;
+        }
+
+        if (targetIndex != _currentFrameIndex)
+        {
+            _currentFrameIndex = targetIndex;
+            PetImage.Source = _animationFrames[_currentFrameIndex].Bitmap;
+        }
     }
 
     // Drag & Drop com suporte nativo e fallback para compositores e WMs customizados do Linux
@@ -254,12 +343,14 @@ public partial class PetSpawnWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _playbackStopwatch.Stop();
         _animationTimer?.Stop();
-        foreach (var bmp in _frames)
+        foreach (var frame in _animationFrames)
         {
-            bmp.Dispose();
+            frame.Bitmap.Dispose();
         }
-        _frames.Clear();
+        _animationFrames.Clear();
+        _cumulativeFrameEndMs.Clear();
         base.OnClosed(e);
     }
 }

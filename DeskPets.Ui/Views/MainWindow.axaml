@@ -15,7 +15,6 @@
     MinHeight="480"
     WindowStartupLocation="CenterScreen"
     WindowDecorations="None"
-    Topmost="{Binding IsAlwaysOnTop}"
     Classes.no-animations="{Binding !EnableAnimations}"
     Background="Transparent"
     TransparencyLevelHint="Transparent,None">

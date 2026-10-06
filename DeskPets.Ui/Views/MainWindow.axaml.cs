@@ -55,6 +55,13 @@ public partial class MainWindow : Window
                 petWin.UpdateFps(vm.Fps);
             }
         }
+        else if (e.PropertyName == nameof(MainViewModel.PetScale))
+        {
+            foreach (var petWin in _activePetWindows.ToArray())
+            {
+                petWin.UpdateScale(vm.PetScale);
+            }
+        }
     }
 
     private void OnSpawnPetRequested(AssetItemViewModel pet)

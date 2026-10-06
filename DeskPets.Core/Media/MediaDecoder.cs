@@ -101,9 +101,107 @@ public static class MediaDecoder
     }
 
     /// <summary>
-    /// Extrai múltiplos quadros de imagens animadas (GIF, WebP) ou vídeos respeitando o FPS informado.
+    /// Obtém a duração aproximada em segundos de uma mídia (vídeo ou animação).
     /// </summary>
-    public static async Task<List<MediaFrame>> ExtractFramesAsync(string filePath, int targetFps = 30, int maxDurationSeconds = 5)
+    public static async Task<double> GetMediaDurationSecondsAsync(string filePath)
+    {
+        if (!File.Exists(filePath)) return 0;
+
+        string ext = Path.GetExtension(filePath).ToLowerInvariant();
+
+        // 1. Se for vídeo, obtém duração via ffprobe (ou fallback com ffmpeg)
+        if (VideoExtensions.Contains(ext))
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = "ffprobe",
+                        Arguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{filePath}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var process = new Process { StartInfo = startInfo };
+                    process.Start();
+                    string output = process.StandardOutput.ReadToEnd().Trim();
+                    process.WaitForExit(4000);
+
+                    if (double.TryParse(output, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double duration))
+                    {
+                        return duration;
+                    }
+                }
+                catch { }
+
+                // Fallback: parsear saída de ffmpeg -i
+                try
+                {
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = "ffmpeg",
+                        Arguments = $"-i \"{filePath}\"",
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var process = new Process { StartInfo = startInfo };
+                    process.Start();
+                    string err = process.StandardError.ReadToEnd();
+                    process.WaitForExit(4000);
+
+                    int idx = err.IndexOf("Duration: ", StringComparison.OrdinalIgnoreCase);
+                    if (idx >= 0)
+                    {
+                        string sub = err.Substring(idx + 10, 11).Trim();
+                        if (TimeSpan.TryParse(sub, out var parsedSpan))
+                        {
+                            return parsedSpan.TotalSeconds;
+                        }
+                    }
+                }
+                catch { }
+
+                return 0.0;
+            });
+        }
+
+        // 2. Se for animação (GIF, WebP), calcula pela soma das durações dos frames no SKCodec
+        if (AnimatedImageExtensions.Contains(ext))
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    using var stream = File.OpenRead(filePath);
+                    using var codec = SKCodec.Create(stream);
+                    if (codec != null && codec.FrameInfo != null)
+                    {
+                        long totalMs = 0;
+                        foreach (var f in codec.FrameInfo)
+                        {
+                            totalMs += f.Duration > 0 ? f.Duration : 33;
+                        }
+                        return totalMs / 1000.0;
+                    }
+                }
+                catch { }
+                return 0.0;
+            });
+        }
+
+        return 0.0;
+    }
+
+    /// <summary>
+    /// Extrai múltiplos quadros de imagens animadas (GIF, WebP) ou vídeos respeitando o FPS informado (até 30 segundos).
+    /// </summary>
+    public static async Task<List<MediaFrame>> ExtractFramesAsync(string filePath, int targetFps = 30, int maxDurationSeconds = 30)
     {
         var frames = new List<MediaFrame>();
         if (!File.Exists(filePath)) return frames;
@@ -225,12 +323,13 @@ public static class MediaDecoder
                 Directory.CreateDirectory(tempDir);
                 string outputPattern = Path.Combine(tempDir, "frame_%04d.png");
 
-                int safeFps = Math.Clamp(fps, 1, 60);
+                // Extrai com taxa de amostragem de pelo menos 30 FPS para permitir alta fluidez sem perda de velocidade
+                int safeFps = Math.Clamp(Math.Max(30, fps), 30, 60);
 
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = $"-loglevel error -t {maxDurationSeconds} -i \"{filePath}\" -vf \"fps={safeFps},scale=200:200:force_original_aspect_ratio=decrease\" \"{outputPattern}\"",
+                    Arguments = $"-loglevel error -t {maxDurationSeconds} -i \"{filePath}\" -vf \"fps={safeFps},scale=280:280:force_original_aspect_ratio=decrease\" \"{outputPattern}\"",
                     RedirectStandardOutput = false,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -239,7 +338,7 @@ public static class MediaDecoder
 
                 using var process = new Process { StartInfo = startInfo };
                 process.Start();
-                process.WaitForExit(5000);
+                process.WaitForExit(45000);
 
                 var generatedFiles = Directory.GetFiles(tempDir, "frame_*.png");
                 Array.Sort(generatedFiles);

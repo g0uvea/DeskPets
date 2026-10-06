@@ -111,10 +111,10 @@ public partial class MainViewModel : ViewModelBase
         ? "Selecione o idioma da interface"
         : "Select the interface language";
 
-    public string AlwaysOnTopTitle => SelectedLanguage == "Português" ? "Sempre no Topo" : "Always on Top";
+    public string AlwaysOnTopTitle => SelectedLanguage == "Português" ? "Pets Sempre no Topo" : "Pets Always on Top";
     public string AlwaysOnTopSubtitle => SelectedLanguage == "Português"
-        ? "Manter janela e pets sobrepostos a outros aplicativos"
-        : "Keep window and pets floating above other applications";
+        ? "Manter os pets sobrepostos a outros aplicativos na área de trabalho"
+        : "Keep pets floating above other applications on the desktop";
 
     public string AnimationsTitle => SelectedLanguage == "Português" ? "Animações na Interface" : "Interface Animations";
     public string AnimationsSubtitle => SelectedLanguage == "Português"

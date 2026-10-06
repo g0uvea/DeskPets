@@ -1,0 +1,129 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="DeskPets.Ui.Views.VideoDurationWarningDialog"
+    Title="Aviso de Duração"
+    Width="450"
+    SizeToContent="Height"
+    CanResize="False"
+    WindowDecorations="None"
+    WindowStartupLocation="CenterOwner"
+    Background="Transparent"
+    TransparencyLevelHint="Transparent,None">
+
+    <Border
+        Background="#1B1724"
+        BorderBrush="#352D46"
+        BorderThickness="1.5"
+        CornerRadius="16"
+        Padding="22"
+        Margin="10">
+
+        <StackPanel Spacing="16">
+            <!-- Header com Ícone e Título -->
+            <Grid ColumnDefinitions="Auto, *">
+                <Border
+                    Grid.Column="0"
+                    Width="40"
+                    Height="40"
+                    CornerRadius="12"
+                    Background="#2C243B"
+                    Margin="0,0,14,0">
+                    <TextBlock
+                        Text="⚠️"
+                        FontSize="20"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock
+                        Name="TitleText"
+                        Text="Aviso de Duração do Vídeo"
+                        FontSize="15"
+                        FontWeight="Bold"
+                        Foreground="#EADBFF" />
+                    <TextBlock
+                        Name="SubtitleText"
+                        Text="Limite máximo de 30 segundos"
+                        FontSize="12"
+                        Foreground="#8F7EA9" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Card Informativo do Arquivo -->
+            <Border
+                Background="#251F31"
+                CornerRadius="10"
+                Padding="12,10">
+                <Grid ColumnDefinitions="*, Auto">
+                    <TextBlock
+                        Name="FileNameText"
+                        Text="video.mp4"
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Foreground="#EADBFF"
+                        VerticalAlignment="Center"
+                        TextTrimming="CharacterEllipsis" />
+                    <Border
+                        Grid.Column="1"
+                        Background="#352D46"
+                        CornerRadius="8"
+                        Padding="8,3"
+                        Margin="10,0,0,0">
+                        <TextBlock
+                            Name="DurationBadgeText"
+                            Text="~45s"
+                            FontSize="12"
+                            FontWeight="Bold"
+                            Foreground="#EADBFF" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Mensagem Explicativa de Corte e Continuidade -->
+            <TextBlock
+                Name="ExplanationText"
+                Text="Este vídeo ultrapassa o limite recomendado para pets na tela. Ele será cortado em exatos 30 segundos, o que poderá causar uma quebra de continuidade ao reiniciar o ciclo da animação."
+                FontSize="13"
+                Foreground="#8F7EA9"
+                TextWrapping="Wrap"
+                LineHeight="19" />
+
+            <!-- Ações: Cancelar e Prosseguir -->
+            <Grid ColumnDefinitions="*, Auto" Margin="0,6,0,0">
+                <Button
+                    Name="CancelBtn"
+                    Grid.Column="0"
+                    Content="Cancelar"
+                    Height="36"
+                    HorizontalAlignment="Left"
+                    Padding="18,0"
+                    Background="#251F31"
+                    Foreground="#8F7EA9"
+                    FontWeight="SemiBold"
+                    FontSize="13"
+                    CornerRadius="10"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Click="OnCancelClick" />
+
+                <Button
+                    Name="ProceedBtn"
+                    Grid.Column="1"
+                    Content="Continuar e Cortar (30s)"
+                    Height="36"
+                    HorizontalAlignment="Right"
+                    Padding="18,0"
+                    Background="#4A3E63"
+                    Foreground="#FFFFFF"
+                    FontWeight="Bold"
+                    FontSize="13"
+                    CornerRadius="10"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Click="OnProceedClick" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>
