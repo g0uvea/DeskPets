@@ -1,0 +1,89 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:DeskPets.Ui.ViewModels"
+    xmlns:views="using:DeskPets.Ui.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    x:Class="DeskPets.Ui.Views.MainWindow"
+    x:DataType="vm:MainViewModel"
+    Title="DeskPets"
+    Width="800"
+    Height="600"
+    MinWidth="640"
+    MinHeight="480"
+    WindowStartupLocation="CenterScreen"
+    WindowDecorations="None"
+    Topmost="{Binding IsAlwaysOnTop}"
+    Background="Transparent"
+    TransparencyLevelHint="Transparent,None">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <!-- Outer Window Border with Rounded Corners (rx=10, fill=#25202F) -->
+    <Border
+        Background="#25202F"
+        CornerRadius="10"
+        ClipToBounds="True"
+        BorderBrush="#352D46"
+        BorderThickness="1">
+
+        <Grid>
+            <!-- Main Window Layout: Row 0 is 40px Header, Row 1 is Content -->
+            <Grid RowDefinitions="40, *">
+
+                <!-- Header / TitleBar (Modular UserControl) -->
+                <views:TitleBarView Grid.Row="0" />
+
+                <!-- Content Panel (Margin=5,6,5,5, Background=#1B1724, rx=10) -->
+                <Border
+                    Grid.Row="1"
+                    Background="#1B1724"
+                    CornerRadius="10"
+                    Margin="5,6,5,5"
+                    ClipToBounds="True">
+
+                    <Panel>
+                        <!-- LOCAL TAB: Grid of Pets -->
+                        <views:LocalView IsVisible="{Binding IsLocalSelected}" />
+
+                        <!-- SHOP TAB: Shop View -->
+                        <views:ShopView IsVisible="{Binding IsShopSelected}" />
+
+                        <!-- OPTIONS TAB: Settings View -->
+                        <views:OptionsView IsVisible="{Binding IsOptionsSelected}" />
+                    </Panel>
+                </Border>
+            </Grid>
+
+            <!-- Subtle Window Resize Borders & Grips -->
+            <Border
+                Width="5"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Background="Transparent"
+                Cursor="SizeWestEast"
+                PointerPressed="OnRightResizePointerPressed" />
+
+            <Border
+                Height="5"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Bottom"
+                Background="Transparent"
+                Cursor="SizeNorthSouth"
+                PointerPressed="OnBottomResizePointerPressed" />
+
+            <Border
+                Width="12"
+                Height="12"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Background="Transparent"
+                Cursor="BottomRightCorner"
+                PointerPressed="OnBottomRightResizePointerPressed" />
+        </Grid>
+    </Border>
+</Window>

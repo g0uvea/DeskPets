@@ -1,0 +1,264 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Global Window & Typography -->
+    <Style Selector="Window">
+        <Setter Property="FontFamily" Value="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif" />
+    </Style>
+
+    <!-- Compact MacOS Traffic Light Buttons (22x22px, CornerRadius=11) -->
+    <Style Selector="Button.traffic-button">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_TrafficCircle"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="11"
+                        Width="22"
+                        Height="22"
+                        ClipToBounds="True">
+                    <Border.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                            <BrushTransition Property="Background" Duration="0:0:0.15" />
+                        </Transitions>
+                    </Border.Transitions>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Blue Button: Adicionar Pets (#2680EB) -->
+    <Style Selector="Button.traffic-blue">
+        <Setter Property="Background" Value="#2680EB" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.traffic-blue:pointerover /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#3B8FF5" />
+        <Setter Property="Opacity" Value="0.95" />
+    </Style>
+    <Style Selector="Button.traffic-blue:pressed /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#1A6ED1" />
+    </Style>
+
+    <!-- Green Button: Minimizar (#34A82A) -->
+    <Style Selector="Button.traffic-green">
+        <Setter Property="Background" Value="#34A82A" />
+    </Style>
+    <Style Selector="Button.traffic-green:pointerover /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#44C23A" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.traffic-green:pressed /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#2A8722" />
+    </Style>
+
+    <!-- Yellow Button: Maximizar / Restaurar (#DAC62A) -->
+    <Style Selector="Button.traffic-yellow">
+        <Setter Property="Background" Value="#DAC62A" />
+    </Style>
+    <Style Selector="Button.traffic-yellow:pointerover /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#E8D53B" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.traffic-yellow:pressed /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#B8A724" />
+    </Style>
+
+    <!-- Red Button: Fechar (#D21E21) -->
+    <Style Selector="Button.traffic-red">
+        <Setter Property="Background" Value="#D21E21" />
+    </Style>
+    <Style Selector="Button.traffic-red:pointerover /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#E62F32" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.traffic-red:pressed /template/ Border#PART_TrafficCircle">
+        <Setter Property="Background" Value="#B3191B" />
+    </Style>
+
+    <!-- Navigation Tab Pill Buttons (Height=30, MinWidth=120, CornerRadius=15) -->
+    <Style Selector="Button.tab-pill">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="MinWidth" Value="120" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_TabBorder"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="15"
+                        Padding="16,0"
+                        Height="30"
+                        MinWidth="120">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.18" />
+                        </Transitions>
+                    </Border.Transitions>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      RecognizesAccessKey="True" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Active Tab Pill (Clara e destacada: #4A3E63 e texto #EADBFF) -->
+    <Style Selector="Button.tab-pill.tab-pill-active">
+        <Setter Property="Background" Value="#4A3E63" />
+        <Setter Property="Foreground" Value="#EADBFF" />
+    </Style>
+    <Style Selector="Button.tab-pill.tab-pill-active:pointerover">
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.tab-pill.tab-pill-active:pointerover /template/ Border#PART_TabBorder">
+        <Setter Property="Background" Value="#564873" />
+    </Style>
+
+    <!-- Inactive Tab Pill (#251F31 e texto #594C73) -->
+    <Style Selector="Button.tab-pill.tab-pill-inactive">
+        <Setter Property="Background" Value="#251F31" />
+        <Setter Property="Foreground" Value="#594C73" />
+    </Style>
+    <Style Selector="Button.tab-pill.tab-pill-inactive:pointerover">
+        <Setter Property="Foreground" Value="#736394" />
+    </Style>
+    <Style Selector="Button.tab-pill.tab-pill-inactive:pointerover /template/ Border#PART_TabBorder">
+        <Setter Property="Background" Value="#2E263D" />
+    </Style>
+
+    <!-- Asset Card Button Style (148x148, rx=15) -->
+    <Style Selector="Button.asset-card-btn">
+        <Setter Property="Width" Value="148" />
+        <Setter Property="Height" Value="148" />
+        <Setter Property="Margin" Value="0,0,5,5" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BorderThickness" Value="1.5" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Background" Value="#251F31" />
+        <Setter Property="CornerRadius" Value="15" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_CardBorder"
+                        Width="148"
+                        Height="148"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        ClipToBounds="True">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.15" />
+                            <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                        </Transitions>
+                    </Border.Transitions>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Hover no Card -->
+    <Style Selector="Button.asset-card-btn:pointerover /template/ Border#PART_CardBorder">
+        <Setter Property="Background" Value="#2C243B" />
+        <Setter Property="BorderBrush" Value="#45385C" />
+    </Style>
+
+    <!-- Card Selecionado (Destaque conforme a imagem enviada) -->
+    <Style Selector="Button.asset-card-btn.selected /template/ Border#PART_CardBorder">
+        <Setter Property="BorderBrush" Value="#7E6C99" />
+        <Setter Property="BorderThickness" Value="1.5" />
+    </Style>
+
+    <!-- Settings Card Container -->
+    <Style Selector="Border.setting-card">
+        <Setter Property="Background" Value="#251F31" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="14,12" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <!-- Dark Violet Slider Theme -->
+    <Style Selector="Slider">
+        <Setter Property="Foreground" Value="#7E6C99" />
+    </Style>
+
+    <!-- Dark Violet ToggleSwitch Theme -->
+    <Style Selector="ToggleSwitch">
+        <Setter Property="OnContent" Value="" />
+        <Setter Property="OffContent" Value="" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
+        <Setter Property="Background" Value="#7E6C99" />
+    </Style>
+
+    <!-- Custom Numeric TextBox for FPS -->
+    <Style Selector="TextBox.fps-input">
+        <Setter Property="Background" Value="#352D46" />
+        <Setter Property="Foreground" Value="#EADBFF" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="Width" Value="42" />
+        <Setter Property="Height" Value="26" />
+    </Style>
+
+    <Style Selector="TextBox.fps-input:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#403754" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="#7E6C99" />
+    </Style>
+
+    <!-- Preset Stop Button -->
+    <Style Selector="Button.stop-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="#594C73" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.stop-btn:pointerover /template/ ContentPresenter">
+        <Setter Property="Foreground" Value="#EADBFF" />
+        <Setter Property="Background" Value="#352D46" />
+    </Style>
+
+    <!-- ScrollBar Styling -->
+    <Style Selector="ScrollBar:vertical">
+        <Setter Property="Width" Value="6" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb">
+        <Setter Property="Background" Value="#352D46" />
+        <Setter Property="CornerRadius" Value="3" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb:pointerover">
+        <Setter Property="Background" Value="#594C73" />
+    </Style>
+</Styles>

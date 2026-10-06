@@ -1,0 +1,92 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:DeskPets.Ui.ViewModels"
+    x:Class="DeskPets.Ui.Views.TitleBarView"
+    x:DataType="vm:MainViewModel"
+    Height="40"
+    Background="Transparent">
+
+    <Border
+        Height="40"
+        Background="#1B1724"
+        CornerRadius="9,9,0,0"
+        PointerPressed="OnTitleBarPointerPressed">
+
+        <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
+
+            <!-- Left: Tabs (LOCAL, SHOP, OPTIONS) with high contrast active state -->
+            <StackPanel
+                Grid.Column="0"
+                Orientation="Horizontal"
+                Spacing="5"
+                Margin="5,5,0,5">
+
+                <Button
+                    Classes="tab-pill"
+                    Classes.tab-pill-active="{Binding IsLocalSelected}"
+                    Classes.tab-pill-inactive="{Binding !IsLocalSelected}"
+                    Command="{Binding SelectTabCommand}"
+                    CommandParameter="LOCAL"
+                    Content="{Binding TabLocalText}" />
+
+                <Button
+                    Classes="tab-pill"
+                    Classes.tab-pill-active="{Binding IsShopSelected}"
+                    Classes.tab-pill-inactive="{Binding !IsShopSelected}"
+                    Command="{Binding SelectTabCommand}"
+                    CommandParameter="SHOP"
+                    Content="{Binding TabShopText}" />
+
+                <Button
+                    Classes="tab-pill"
+                    Classes.tab-pill-active="{Binding IsOptionsSelected}"
+                    Classes.tab-pill-inactive="{Binding !IsOptionsSelected}"
+                    Command="{Binding SelectTabCommand}"
+                    CommandParameter="OPTIONS"
+                    Content="{Binding TabOptionsText}" />
+            </StackPanel>
+
+            <!-- Center: Draggable Spacer -->
+            <Panel
+                Grid.Column="1"
+                Background="Transparent"
+                PointerPressed="OnTitleBarPointerPressed" />
+
+            <!-- Right: Traffic Light Window Controls (Blue: Add, Green: Min, Yellow: Max, Red: Close) -->
+            <StackPanel
+                Grid.Column="2"
+                Orientation="Horizontal"
+                Spacing="6"
+                Margin="0,0,10,0"
+                VerticalAlignment="Center">
+
+                <!-- Blue Button: Adicionar Pet Local (Visible only in LOCAL tab) -->
+                <Button
+                    Classes="traffic-button traffic-blue"
+                    IsVisible="{Binding IsLocalSelected}"
+                    Click="OnAddPetClick"
+                    ToolTip.Tip="Adicionar Pet Local"
+                    Content="+" />
+
+                <!-- Green Button: Minimizar (22x22px) -->
+                <Button
+                    Classes="traffic-button traffic-green"
+                    Click="OnMinimizeClick"
+                    ToolTip.Tip="Minimizar" />
+
+                <!-- Yellow Button: Maximizar / Restaurar (22x22px) -->
+                <Button
+                    Classes="traffic-button traffic-yellow"
+                    Click="OnMaximizeClick"
+                    ToolTip.Tip="Maximizar / Restaurar" />
+
+                <!-- Red Button: Fechar (22x22px) -->
+                <Button
+                    Classes="traffic-button traffic-red"
+                    Click="OnCloseClick"
+                    ToolTip.Tip="Fechar" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

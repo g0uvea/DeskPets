@@ -1,0 +1,104 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:DeskPets.Ui.ViewModels"
+    x:Class="DeskPets.Ui.Views.LocalView"
+    x:DataType="vm:MainViewModel">
+
+    <Grid>
+        <!-- Empty State (quando ainda não há pets importados) -->
+        <Border
+            IsVisible="{Binding !Assets.Count}"
+            Padding="10"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+
+                <!-- Subtle paw / add circle icon -->
+                <Border
+                    Width="60"
+                    Height="60"
+                    CornerRadius="30"
+                    Background="#251F31"
+                    HorizontalAlignment="Center">
+                    <TextBlock
+                        Text="+"
+                        FontSize="28"
+                        FontWeight="Bold"
+                        Foreground="#594C73"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Border>
+
+                <TextBlock
+                    Text="{Binding EmptyLocalMessage}"
+                    FontSize="13"
+                    Foreground="#594C73"
+                    TextAlignment="Center"
+                    HorizontalAlignment="Center"
+                    MaxWidth="380"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <!-- Responsive Grid de Pets (Padding padronizado em 10px para todos os lados) -->
+        <ScrollViewer
+            IsVisible="{Binding Assets.Count}"
+            VerticalScrollBarVisibility="Auto"
+            HorizontalScrollBarVisibility="Disabled"
+            Padding="10">
+
+            <ItemsControl ItemsSource="{Binding Assets}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AssetItemViewModel">
+                        <Button
+                            Classes="asset-card-btn"
+                            Classes.selected="{Binding IsSelected}"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SelectAssetCommand}"
+                            CommandParameter="{Binding}">
+
+                            <Grid RowDefinitions="*, 20">
+                                <!-- Área para animação / avatar do Pet -->
+                                <Panel Grid.Row="0">
+                                    <TextBlock
+                                        Text="🐾"
+                                        FontSize="26"
+                                        Opacity="0.3"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Panel>
+
+                                <!-- Bottom Label Pill (138x20, rx=10, fill=#4D000000, Text #594C73) -->
+                                <Border
+                                    Grid.Row="1"
+                                    Height="20"
+                                    Margin="5,0,5,5"
+                                    CornerRadius="10"
+                                    Background="#4D000000">
+
+                                    <TextBlock
+                                        Text="{Binding Name}"
+                                        Foreground="#594C73"
+                                        FontSize="12"
+                                        FontWeight="Bold"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

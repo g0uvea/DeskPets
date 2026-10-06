@@ -1,0 +1,40 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:DeskPets.Ui.ViewModels"
+    x:Class="DeskPets.Ui.Views.ShopView"
+    x:DataType="vm:MainViewModel">
+
+    <!-- Espaçamento uniforme de 10px para cada lado -->
+    <Grid Margin="10">
+        <Border
+            Background="#251F31"
+            CornerRadius="12"
+            Padding="20"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+
+                <TextBlock
+                    Text="SHOP"
+                    FontSize="20"
+                    FontWeight="Bold"
+                    Foreground="#8F7EA9"
+                    HorizontalAlignment="Center" />
+
+                <TextBlock
+                    Text="{Binding ShopEmptyMessage}"
+                    FontSize="13"
+                    Foreground="#594C73"
+                    HorizontalAlignment="Center"
+                    TextAlignment="Center"
+                    MaxWidth="400"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
