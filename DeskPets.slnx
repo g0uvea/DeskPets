@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DeskPets.Core/DeskPets.Core.csproj" />
+  <Project Path="DeskPets.Ui/DeskPets.Ui.csproj" />
+</Solution>
