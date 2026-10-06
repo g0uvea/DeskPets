@@ -207,6 +207,7 @@
         <Setter Property="Background" Value="#251F31" />
         <Setter Property="CornerRadius" Value="15" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Name="PART_CardBorder"
@@ -239,10 +240,10 @@
         <Setter Property="BorderBrush" Value="#9E8BBF" />
     </Style>
 
-    <!-- Card Selecionado (Destaque conforme a imagem enviada) -->
+    <!-- Card com Pet em Tela (Destaque quando o modo de duplicados estiver desativado) -->
     <Style Selector="Button.asset-card-btn.selected /template/ Border#PART_CardBorder">
-        <Setter Property="BorderBrush" Value="#7E6C99" />
-        <Setter Property="BorderThickness" Value="1.5" />
+        <Setter Property="BorderBrush" Value="#9D7CE0" />
+        <Setter Property="BorderThickness" Value="2" />
     </Style>
 
     <!-- ContextMenu & MenuItem Styling -->

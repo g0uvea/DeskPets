@@ -3,20 +3,29 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     x:Class="DeskPets.Ui.Views.PetSpawnWindow"
     Title="DeskPet"
-    Width="160"
-    Height="160"
+    Width="140"
+    Height="140"
     WindowDecorations="None"
-    Topmost="True"
     ShowInTaskbar="False"
     Background="Transparent"
     TransparencyLevelHint="Transparent,None"
     CanResize="False"
-    PointerPressed="OnPetPointerPressed">
+    Cursor="SizeAll"
+    PointerPressed="OnPetPointerPressed"
+    PointerMoved="OnPetPointerMoved"
+    PointerReleased="OnPetPointerReleased">
 
-    <!-- Janela de Pet Flutuante na Área de Trabalho -->
+    <!-- Janela de Pet Flutuante na Área de Trabalho (Suporte Cross-Platform: Windows, Linux e macOS) -->
     <Panel Background="Transparent">
         <Panel.ContextMenu>
             <ContextMenu>
+                <MenuItem Header="Sempre no Topo" Click="OnToggleTopmostClick">
+                    <MenuItem.Icon>
+                        <CheckBox IsChecked="{Binding $parent[Window].Topmost, Mode=OneWay}"
+                                  IsHitTestVisible="False" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="Fechar este Pet" Click="OnClosePetClick">
                     <MenuItem.Icon>
                         <TextBlock Text="❌" FontSize="12" />
@@ -30,5 +39,14 @@
             Stretch="Uniform"
             HorizontalAlignment="Center"
             VerticalAlignment="Center" />
+
+        <!-- Ícone Fallback caso ainda não haja imagem -->
+        <TextBlock
+            Name="FallbackIcon"
+            Text="🐾"
+            FontSize="44"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            IsVisible="False" />
     </Panel>
 </Window>

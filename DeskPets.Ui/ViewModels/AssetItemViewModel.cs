@@ -28,6 +28,15 @@ public partial class AssetItemViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSelected;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSpawned))]
+    private int _activeInstanceCount = 0;
+
+    public bool IsSpawned => ActiveInstanceCount > 0;
+
+    [ObservableProperty]
+    private bool _isCardHighlighted = false;
+
     public AssetItemViewModel(int id, string name = "Asset", string? filePath = null)
     {
         _id = id;

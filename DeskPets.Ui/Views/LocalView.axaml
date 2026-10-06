@@ -64,7 +64,8 @@
                     <DataTemplate x:DataType="vm:AssetItemViewModel">
                         <Button
                             Classes="asset-card-btn"
-                            Classes.selected="{Binding IsSelected}"
+                            Classes.selected="{Binding IsCardHighlighted}"
+                            Focusable="False"
                             Command="{Binding #LocalRoot.((vm:MainViewModel)DataContext).SelectAssetCommand}"
                             CommandParameter="{Binding}">
 

@@ -62,6 +62,9 @@ public partial class MainViewModel : ViewModelBase
     private bool _enableAnimations = true;
 
     [ObservableProperty]
+    private bool _allowDuplicatePets = true;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPortugueseSelected))]
     [NotifyPropertyChangedFor(nameof(IsEnglishSelected))]
     [NotifyPropertyChangedFor(nameof(TabLocalText))]
@@ -77,6 +80,8 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(AlwaysOnTopSubtitle))]
     [NotifyPropertyChangedFor(nameof(AnimationsTitle))]
     [NotifyPropertyChangedFor(nameof(AnimationsSubtitle))]
+    [NotifyPropertyChangedFor(nameof(AllowDuplicatePetsTitle))]
+    [NotifyPropertyChangedFor(nameof(AllowDuplicatePetsSubtitle))]
     [NotifyPropertyChangedFor(nameof(ShopEmptyMessage))]
     [NotifyPropertyChangedFor(nameof(EmptyLocalMessage))]
     [NotifyPropertyChangedFor(nameof(SpawnPetMenuText))]
@@ -116,6 +121,13 @@ public partial class MainViewModel : ViewModelBase
         ? "Ativar transições suaves e efeitos visuais"
         : "Enable smooth transitions and visual effects";
 
+    public string AllowDuplicatePetsTitle => SelectedLanguage == "Português"
+        ? "Sumonar Pets Duplicados"
+        : "Summon Duplicate Pets";
+    public string AllowDuplicatePetsSubtitle => SelectedLanguage == "Português"
+        ? "Permite criar múltiplas cópias do mesmo pet simultaneamente na tela"
+        : "Allow spawning multiple copies of the same pet on screen at once";
+
     public string ShopEmptyMessage => SelectedLanguage == "Português"
         ? "Novos pets, skins e animações estarão disponíveis aqui em breve."
         : "New pets, skins and animations will be available here soon.";
@@ -140,6 +152,7 @@ public partial class MainViewModel : ViewModelBase
         PetScale = Math.Clamp(settings.PetScale, 50, 200);
         IsAlwaysOnTop = settings.IsAlwaysOnTop;
         EnableAnimations = settings.EnableAnimations;
+        AllowDuplicatePets = settings.AllowDuplicatePets;
         Fps = Math.Clamp(settings.Fps, 0, 60);
         FpsInputText = Fps.ToString();
         FpsSliderIndex = FindClosestStopIndex(Fps);
@@ -154,6 +167,8 @@ public partial class MainViewModel : ViewModelBase
                 Assets.Add(new AssetItemViewModel(pet.Id, pet.Name, pet.FilePath));
             }
         }
+
+        UpdateCardHighlights();
     }
 
     public void SaveSettings()
@@ -164,7 +179,8 @@ public partial class MainViewModel : ViewModelBase
             PetScale = PetScale,
             Language = SelectedLanguage,
             IsAlwaysOnTop = IsAlwaysOnTop,
-            EnableAnimations = EnableAnimations
+            EnableAnimations = EnableAnimations,
+            AllowDuplicatePets = AllowDuplicatePets
         };
 
         SettingsService.Save(settings);
@@ -237,9 +253,34 @@ public partial class MainViewModel : ViewModelBase
         SaveSettings();
     }
 
+    partial void OnAllowDuplicatePetsChanged(bool value)
+    {
+        UpdateCardHighlights();
+        SaveSettings();
+    }
+
     partial void OnSelectedLanguageChanged(string value)
     {
         SaveSettings();
+    }
+
+    public void UpdateCardHighlights()
+    {
+        foreach (var asset in Assets)
+        {
+            if (AllowDuplicatePets)
+            {
+                // Se o modo de pets duplicados estiver ativo, remove a borda de foco para não prender no card
+                asset.IsCardHighlighted = false;
+                asset.IsSelected = false;
+            }
+            else
+            {
+                // Se duplicados estiver desativado, mantém a borda clara apenas nos pets que estão em tela
+                asset.IsCardHighlighted = asset.IsSpawned;
+                asset.IsSelected = asset.IsSpawned;
+            }
+        }
     }
 
     private static int FindClosestStopIndex(int fps)
@@ -282,13 +323,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void SelectAsset(AssetItemViewModel asset)
     {
-        foreach (var a in Assets)
-        {
-            a.IsSelected = false;
-        }
-
-        asset.IsSelected = true;
         SelectedAsset = asset;
+        SpawnPetRequested?.Invoke(asset);
     }
 
     [RelayCommand]

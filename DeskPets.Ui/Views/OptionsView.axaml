@@ -271,6 +271,28 @@
                         VerticalAlignment="Center" />
                 </Grid>
             </Border>
+
+            <!-- Card 6: Sumonar Pets Duplicados -->
+            <Border Classes="setting-card">
+                <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock
+                            Text="{Binding AllowDuplicatePetsTitle}"
+                            FontSize="14"
+                            FontWeight="Bold"
+                            Foreground="#EADBFF" />
+                        <TextBlock
+                            Text="{Binding AllowDuplicatePetsSubtitle}"
+                            FontSize="12"
+                            Foreground="#8F7EA9" />
+                    </StackPanel>
+
+                    <ToggleSwitch
+                        Grid.Column="1"
+                        IsChecked="{Binding AllowDuplicatePets, Mode=TwoWay}"
+                        VerticalAlignment="Center" />
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
