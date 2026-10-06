@@ -49,9 +49,17 @@ public partial class TitleBarView : UserControl
                 AllowMultiple = true,
                 FileTypeFilter = new[]
                 {
-                    new FilePickerFileType("Imagens e Assets")
+                    new FilePickerFileType("Todos os Formatos Suportados")
                     {
-                        Patterns = new[] { "*.png", "*.gif", "*.jpg", "*.jpeg", "*.svg", "*.webp", "*.json" }
+                        Patterns = new[] { "*.png", "*.gif", "*.jpg", "*.jpeg", "*.webp", "*.bmp", "*.mp4", "*.webm", "*.mov", "*.av1", "*.mkv", "*.avi" }
+                    },
+                    new FilePickerFileType("Imagens e Animações (*.png, *.gif, *.webp, *.jpg)")
+                    {
+                        Patterns = new[] { "*.png", "*.gif", "*.jpg", "*.jpeg", "*.webp", "*.bmp" }
+                    },
+                    new FilePickerFileType("Vídeos (*.mp4, *.webm, *.mov, *.av1)")
+                    {
+                        Patterns = new[] { "*.mp4", "*.webm", "*.mov", "*.av1", "*.mkv", "*.avi" }
                     },
                     FilePickerFileTypes.All
                 }

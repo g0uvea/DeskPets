@@ -1,0 +1,34 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="DeskPets.Ui.Views.PetSpawnWindow"
+    Title="DeskPet"
+    Width="160"
+    Height="160"
+    WindowDecorations="None"
+    Topmost="True"
+    ShowInTaskbar="False"
+    Background="Transparent"
+    TransparencyLevelHint="Transparent,None"
+    CanResize="False"
+    PointerPressed="OnPetPointerPressed">
+
+    <!-- Janela de Pet Flutuante na Área de Trabalho -->
+    <Panel Background="Transparent">
+        <Panel.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Fechar este Pet" Click="OnClosePetClick">
+                    <MenuItem.Icon>
+                        <TextBlock Text="❌" FontSize="12" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </ContextMenu>
+        </Panel.ContextMenu>
+
+        <Image
+            Name="PetImage"
+            Stretch="Uniform"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center" />
+    </Panel>
+</Window>

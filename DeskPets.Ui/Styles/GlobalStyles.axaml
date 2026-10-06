@@ -168,8 +168,7 @@
                         ClipToBounds="True">
                     <Border.Transitions>
                         <Transitions>
-                            <BrushTransition Property="Background" Duration="0:0:0.15" />
-                            <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                            <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
                         </Transitions>
                     </Border.Transitions>
                     <ContentPresenter Content="{TemplateBinding Content}"
@@ -179,16 +178,39 @@
         </Setter>
     </Style>
 
-    <!-- Hover no Card -->
+    <!-- Hover no Card: Apenas a borda muda de cor, fundo permanece 100% estático sem pulso -->
     <Style Selector="Button.asset-card-btn:pointerover /template/ Border#PART_CardBorder">
-        <Setter Property="Background" Value="#2C243B" />
-        <Setter Property="BorderBrush" Value="#45385C" />
+        <Setter Property="BorderBrush" Value="#7E6C99" />
+    </Style>
+
+    <Style Selector="Button.asset-card-btn:pressed /template/ Border#PART_CardBorder">
+        <Setter Property="Background" Value="#251F31" />
+        <Setter Property="BorderBrush" Value="#9E8BBF" />
     </Style>
 
     <!-- Card Selecionado (Destaque conforme a imagem enviada) -->
     <Style Selector="Button.asset-card-btn.selected /template/ Border#PART_CardBorder">
         <Setter Property="BorderBrush" Value="#7E6C99" />
         <Setter Property="BorderThickness" Value="1.5" />
+    </Style>
+
+    <!-- ContextMenu & MenuItem Styling -->
+    <Style Selector="ContextMenu">
+        <Setter Property="Background" Value="#1B1724" />
+        <Setter Property="BorderBrush" Value="#352D46" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="4" />
+    </Style>
+    <Style Selector="MenuItem">
+        <Setter Property="Foreground" Value="#EADBFF" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+    <Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="#352D46" />
     </Style>
 
     <!-- Settings Card Container -->

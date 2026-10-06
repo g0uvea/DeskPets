@@ -3,14 +3,16 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DeskPets.Ui.Models;
-using DeskPets.Ui.Services;
+using DeskPets.Core.Models;
+using DeskPets.Core.Services;
 
 namespace DeskPets.Ui.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
     private static readonly int[] FpsStops = { 0, 15, 24, 30, 60 };
+
+    public event Action<AssetItemViewModel>? SpawnPetRequested;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLocalSelected))]
@@ -61,6 +63,8 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(AlwaysOnTopSubtitle))]
     [NotifyPropertyChangedFor(nameof(ShopEmptyMessage))]
     [NotifyPropertyChangedFor(nameof(EmptyLocalMessage))]
+    [NotifyPropertyChangedFor(nameof(SpawnPetMenuText))]
+    [NotifyPropertyChangedFor(nameof(RemovePetMenuText))]
     private string _selectedLanguage = "Português";
 
     public bool IsPortugueseSelected => SelectedLanguage == "Português";
@@ -96,32 +100,34 @@ public partial class MainViewModel : ViewModelBase
         : "New pets, skins and animations will be available here soon.";
 
     public string EmptyLocalMessage => SelectedLanguage == "Português"
-        ? "Nenhum pet adicionado ainda.\nClique no botão azul no topo para importar seus pets!"
-        : "No pets added yet.\nClick the blue button at the top to import your pets!";
+        ? "Nenhum pet adicionado ainda.\nClique no botão azul (+) acima para importar seus pets!"
+        : "No pets added yet.\nClick the blue button (+) above to import your pets!";
+
+    public string SpawnPetMenuText => SelectedLanguage == "Português" ? "Spawnar Pet na Tela" : "Spawn Pet on Screen";
+    public string RemovePetMenuText => SelectedLanguage == "Português" ? "Remover da Biblioteca" : "Remove from Library";
 
     public MainViewModel()
     {
-        // Carrega configurações persistidas
         LoadSettings();
     }
 
     private void LoadSettings()
     {
+        // 1. Carrega configurações do settings.json
         var settings = SettingsService.Load();
         SelectedLanguage = settings.Language ?? "Português";
         PetScale = Math.Clamp(settings.PetScale, 50, 200);
         IsAlwaysOnTop = settings.IsAlwaysOnTop;
         Fps = Math.Clamp(settings.Fps, 0, 60);
         FpsInputText = Fps.ToString();
-
-        // Encontra o stop mais próximo no slider
         FpsSliderIndex = FindClosestStopIndex(Fps);
 
-        // Carrega pets persistidos (se houver)
+        // 2. Carrega biblioteca de pets do pets.json
+        var storedPets = PetStorageService.LoadPets();
         Assets.Clear();
-        if (settings.ImportedPets != null && settings.ImportedPets.Count > 0)
+        if (storedPets != null && storedPets.Count > 0)
         {
-            foreach (var pet in settings.ImportedPets)
+            foreach (var pet in storedPets)
             {
                 Assets.Add(new AssetItemViewModel(pet.Id, pet.Name, pet.FilePath));
             }
@@ -135,16 +141,23 @@ public partial class MainViewModel : ViewModelBase
             Fps = Fps,
             PetScale = PetScale,
             Language = SelectedLanguage,
-            IsAlwaysOnTop = IsAlwaysOnTop,
-            ImportedPets = Assets.Select(a => new PetAssetModel
-            {
-                Id = a.Id,
-                Name = a.Name,
-                FilePath = a.FilePath
-            }).ToList()
+            IsAlwaysOnTop = IsAlwaysOnTop
         };
 
         SettingsService.Save(settings);
+    }
+
+    public void SavePets()
+    {
+        var pets = Assets.Select(a => new PetAssetModel
+        {
+            Id = a.Id,
+            Name = a.Name,
+            FilePath = a.FilePath,
+            MediaType = a.MediaType
+        }).ToList();
+
+        PetStorageService.SavePets(pets);
     }
 
     // Mudança de FPS via Slider (índice 0..4)
@@ -250,6 +263,27 @@ public partial class MainViewModel : ViewModelBase
         SelectedAsset = asset;
     }
 
+    [RelayCommand]
+    private void SpawnPet(AssetItemViewModel asset)
+    {
+        SpawnPetRequested?.Invoke(asset);
+    }
+
+    [RelayCommand]
+    private void RemovePet(AssetItemViewModel asset)
+    {
+        Assets.Remove(asset);
+        if (SelectedAsset == asset)
+        {
+            SelectedAsset = Assets.FirstOrDefault();
+            if (SelectedAsset != null)
+            {
+                SelectedAsset.IsSelected = true;
+            }
+        }
+        SavePets();
+    }
+
     public void AddImportedPet(string name, string? filePath)
     {
         int nextId = Assets.Count > 0 ? Assets.Max(a => a.Id) + 1 : 1;
@@ -263,6 +297,6 @@ public partial class MainViewModel : ViewModelBase
 
         Assets.Add(newPet);
         SelectedAsset = newPet;
-        SaveSettings();
+        SavePets();
     }
 }

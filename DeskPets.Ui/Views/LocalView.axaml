@@ -3,6 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:DeskPets.Ui.ViewModels"
     x:Class="DeskPets.Ui.Views.LocalView"
+    x:Name="LocalRoot"
     x:DataType="vm:MainViewModel">
 
     <Grid>
@@ -18,7 +19,7 @@
                 VerticalAlignment="Center"
                 Spacing="12">
 
-                <!-- Subtle paw / add circle icon -->
+                <!-- Símbolo de adicionar pet -->
                 <Border
                     Width="60"
                     Height="60"
@@ -64,18 +65,51 @@
                         <Button
                             Classes="asset-card-btn"
                             Classes.selected="{Binding IsSelected}"
-                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SelectAssetCommand}"
+                            Command="{Binding #LocalRoot.((vm:MainViewModel)DataContext).SelectAssetCommand}"
                             CommandParameter="{Binding}">
 
+                            <!-- Menu de Contexto (Clique com o Botão Direito) -->
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem
+                                        Header="{Binding #LocalRoot.((vm:MainViewModel)DataContext).SpawnPetMenuText}"
+                                        Command="{Binding #LocalRoot.((vm:MainViewModel)DataContext).SpawnPetCommand}"
+                                        CommandParameter="{Binding}">
+                                        <MenuItem.Icon>
+                                            <TextBlock Text="🚀" FontSize="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem
+                                        Header="{Binding #LocalRoot.((vm:MainViewModel)DataContext).RemovePetMenuText}"
+                                        Command="{Binding #LocalRoot.((vm:MainViewModel)DataContext).RemovePetCommand}"
+                                        CommandParameter="{Binding}">
+                                        <MenuItem.Icon>
+                                            <TextBlock Text="🗑️" FontSize="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+
                             <Grid RowDefinitions="*, 20">
-                                <!-- Área para animação / avatar do Pet -->
+                                <!-- Área de Imagem/Vídeo do Pet no Card -->
                                 <Panel Grid.Row="0">
+                                    <!-- Imagem / Frame decodificado -->
+                                    <Image
+                                        Source="{Binding Thumbnail}"
+                                        Stretch="Uniform"
+                                        Margin="6"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                                    <!-- Ícone fallback caso não haja imagem carregada ainda -->
                                     <TextBlock
                                         Text="🐾"
-                                        FontSize="26"
-                                        Opacity="0.3"
+                                        FontSize="28"
+                                        Opacity="0.25"
                                         HorizontalAlignment="Center"
-                                        VerticalAlignment="Center" />
+                                        VerticalAlignment="Center"
+                                        IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}" />
                                 </Panel>
 
                                 <!-- Bottom Label Pill (138x20, rx=10, fill=#4D000000, Text #594C73) -->
@@ -92,7 +126,9 @@
                                         FontSize="12"
                                         FontWeight="Bold"
                                         HorizontalAlignment="Center"
-                                        VerticalAlignment="Center" />
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"
+                                        Margin="4,0" />
                                 </Border>
                             </Grid>
                         </Button>
