@@ -52,6 +52,18 @@ public partial class AssetItemViewModel : ViewModelBase
     private readonly List<MediaFrame> _cachedRawFrames = new();
     private readonly TaskCompletionSource _framesLoadedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    [ObservableProperty]
+    private int _mediaWidth = 0;
+
+    [ObservableProperty]
+    private int _mediaHeight = 0;
+
+    public double AspectRatio => MediaHeight > 0
+        ? (double)MediaWidth / MediaHeight
+        : (Thumbnail != null && Thumbnail.PixelSize.Height > 0
+            ? (double)Thumbnail.PixelSize.Width / Thumbnail.PixelSize.Height
+            : 1.0);
+
     public Task WaitForFramesLoadedAsync() => _framesLoadedTcs.Task;
     public IReadOnlyList<MediaFrame> CachedRawFrames => _cachedRawFrames;
     public IReadOnlyList<Bitmap> PreviewFrames => _previewFrames;
@@ -106,6 +118,8 @@ public partial class AssetItemViewModel : ViewModelBase
                     {
                         using var ms = new MemoryStream(thumbBytes);
                         Thumbnail = new Bitmap(ms);
+                        MediaWidth = Thumbnail.PixelSize.Width;
+                        MediaHeight = Thumbnail.PixelSize.Height;
                     }
                     catch (Exception ex)
                     {
@@ -187,6 +201,8 @@ public partial class AssetItemViewModel : ViewModelBase
                     if (_previewFrames.Count > 0)
                     {
                         Thumbnail = _previewFrames[0];
+                        MediaWidth = Thumbnail.PixelSize.Width;
+                        MediaHeight = Thumbnail.PixelSize.Height;
                     }
                     PreviewFramesUpdated?.Invoke();
                 });

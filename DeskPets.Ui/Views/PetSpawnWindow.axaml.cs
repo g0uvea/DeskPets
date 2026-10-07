@@ -56,6 +56,8 @@ public partial class PetSpawnWindow : Window
 
   private DispatcherTimer? _spinnerTimer;
   private double _spinnerAngle = 0;
+  private double _aspectRatio = 1.0;
+  private int _currentScale = 100;
 
   private void SetLoadingState(bool isLoading)
   {
@@ -113,15 +115,24 @@ public partial class PetSpawnWindow : Window
     Topmost = isAlwaysOnTop;
     _onSavePetsRequested = onSavePetsRequested;
     _language = language;
+    _currentScale = scale;
 
-    // Dimensões com trava de Min/Max para forçar modo flutuante em Tiling WMs no Linux (i3, sway, bspwm)
-    int size = Math.Max(64, (int)(BasePetSize * scale / 100.0));
-    Width = size;
-    Height = size;
-    MinWidth = size;
-    MaxWidth = size;
-    MinHeight = size;
-    MaxHeight = size;
+    // Detecta proporção (aspect ratio) da mídia para crop perfeito da janela
+    if (pet.Thumbnail != null && pet.Thumbnail.PixelSize.Height > 0)
+    {
+      _aspectRatio = (double)pet.Thumbnail.PixelSize.Width / pet.Thumbnail.PixelSize.Height;
+    }
+    else if (pet.MediaHeight > 0 && pet.MediaWidth > 0)
+    {
+      _aspectRatio = (double)pet.MediaWidth / pet.MediaHeight;
+    }
+    else if (pet.CachedRawFrames.Count > 0 && pet.CachedRawFrames[0].Height > 0)
+    {
+      _aspectRatio = (double)pet.CachedRawFrames[0].Width / pet.CachedRawFrames[0].Height;
+    }
+
+    // Aplica o crop exato da janela mantendo a escala configurada ampla
+    ApplyWindowSize(_currentScale);
 
     // Exibe thumbnail ou ícone fallback
     if (pet.Thumbnail != null)
@@ -142,17 +153,68 @@ public partial class PetSpawnWindow : Window
   }
 
   /// <summary>
+  /// Aplica as dimensões da janela rigorosamente recortadas (crop) de acordo com a proporção do vídeo/imagem.
+  /// A maior dimensão respeita o tamanho base e a escala, garantindo que o pet fique grande e nítido
+  /// sem nenhuma área transparente ociosa nas laterais ou topo/fundo que bloqueie cliques no desktop.
+  /// </summary>
+  private void ApplyWindowSize(int scale)
+  {
+    int targetBound = Math.Max(64, (int)(BasePetSize * scale / 100.0));
+    int finalW, finalH;
+
+    if (_aspectRatio <= 0.001)
+    {
+      finalW = targetBound;
+      finalH = targetBound;
+    }
+    else if (_aspectRatio < 1.0)
+    {
+      // Mídia Vertical (ex: Shorts 9:16)
+      // A altura preenche o targetBound e a largura é ajustada na proporção exata
+      finalH = targetBound;
+      finalW = Math.Max(48, (int)Math.Round(targetBound * _aspectRatio));
+    }
+    else if (_aspectRatio > 1.0)
+    {
+      // Mídia Horizontal (ex: Widescreen 16:9)
+      // A largura preenche o targetBound e a altura é ajustada na proporção exata
+      finalW = targetBound;
+      finalH = Math.Max(48, (int)Math.Round(targetBound / _aspectRatio));
+    }
+    else
+    {
+      // Mídia Quadrada (1:1)
+      finalW = targetBound;
+      finalH = targetBound;
+    }
+
+    Width = finalW;
+    Height = finalH;
+    MinWidth = finalW;
+    MaxWidth = finalW;
+    MinHeight = finalH;
+    MaxHeight = finalH;
+  }
+
+  private void UpdateDimensionsFromBitmap(Bitmap? bitmap)
+  {
+    if (bitmap == null || bitmap.PixelSize.Width <= 0 || bitmap.PixelSize.Height <= 0) return;
+
+    double newAspect = (double)bitmap.PixelSize.Width / bitmap.PixelSize.Height;
+    if (Math.Abs(newAspect - _aspectRatio) > 0.01)
+    {
+      _aspectRatio = newAspect;
+      ApplyWindowSize(_currentScale);
+    }
+  }
+
+  /// <summary>
   /// Atualiza em tempo real a escala do pet flutuante caso o usuário ajuste o slider nas opções.
   /// </summary>
   public void UpdateScale(int scale)
   {
-    int size = Math.Max(64, (int)(BasePetSize * scale / 100.0));
-    Width = size;
-    Height = size;
-    MinWidth = size;
-    MaxWidth = size;
-    MinHeight = size;
-    MaxHeight = size;
+    _currentScale = scale;
+    ApplyWindowSize(_currentScale);
   }
 
   /// <summary>
@@ -313,6 +375,11 @@ public partial class PetSpawnWindow : Window
     FallbackIcon.IsVisible = false;
     _isUsingSharedBitmaps = true;
 
+    if (_animationFrames.Count > 0)
+    {
+      UpdateDimensionsFromBitmap(_animationFrames[0].Bitmap);
+    }
+
     if (IsAnimationsEnabled && _fps > 0 && _animationFrames.Count > 1)
     {
       _playbackStopwatch.Restart();
@@ -445,6 +512,11 @@ public partial class PetSpawnWindow : Window
     {
       _animationFrames.Clear();
       _animationFrames.AddRange(processedFrames);
+
+      if (processedFrames.Count > 0)
+      {
+        UpdateDimensionsFromBitmap(processedFrames[0].Bitmap);
+      }
 
       _cumulativeFrameEndMs.Clear();
       _cumulativeFrameEndMs.AddRange(fullCumulative);

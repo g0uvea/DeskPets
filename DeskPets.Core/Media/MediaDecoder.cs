@@ -405,13 +405,23 @@ public static class MediaDecoder
                 var generatedFiles = Directory.GetFiles(tempDir, "frame_*.png");
                 Array.Sort(generatedFiles);
 
+                int frameWidth = 0;
+                int frameHeight = 0;
                 var frameDuration = TimeSpan.FromSeconds(1.0 / safeFps);
                 foreach (var file in generatedFiles)
                 {
                     byte[] data = File.ReadAllBytes(file);
+                    if (frameWidth == 0 && data.Length >= 24 && data[0] == 0x89 && data[1] == 0x50)
+                    {
+                        frameWidth = (data[16] << 24) | (data[17] << 16) | (data[18] << 8) | data[19];
+                        frameHeight = (data[20] << 24) | (data[21] << 16) | (data[22] << 8) | data[23];
+                    }
+
                     frames.Add(new MediaFrame
                     {
                         Data = data,
+                        Width = frameWidth,
+                        Height = frameHeight,
                         Duration = frameDuration
                     });
                 }
