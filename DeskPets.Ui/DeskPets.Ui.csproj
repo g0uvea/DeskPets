@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DeskPets.Core\DeskPets.Core.csproj" />
+    <ProjectReference Include="..\DeskPets.Effects\DeskPets.Effects.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeskPets.Core.Models;
@@ -164,11 +165,16 @@ public partial class MainViewModel : ViewModelBase
         {
             foreach (var pet in storedPets)
             {
-                Assets.Add(new AssetItemViewModel(pet.Id, pet.Name, pet.FilePath));
+                var item = new AssetItemViewModel(pet.Id, pet.Name, pet.FilePath, pet.ChromaKey)
+                {
+                    CreatedAt = pet.CreatedAt
+                };
+                Assets.Add(item);
             }
         }
 
         UpdateCardHighlights();
+        UpdateLibraryAnimationTimer();
     }
 
     public void SaveSettings()
@@ -193,7 +199,9 @@ public partial class MainViewModel : ViewModelBase
             Id = a.Id,
             Name = a.Name,
             FilePath = a.FilePath,
-            MediaType = a.MediaType
+            MediaType = a.MediaType,
+            CreatedAt = a.CreatedAt,
+            ChromaKey = a.ChromaKey
         }).ToList();
 
         PetStorageService.SavePets(pets);
@@ -235,6 +243,7 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnFpsChanged(int value)
     {
+        UpdateLibraryAnimationTimer();
         SaveSettings();
     }
 
@@ -248,8 +257,14 @@ public partial class MainViewModel : ViewModelBase
         SaveSettings();
     }
 
+    partial void OnSelectedTabChanged(string value)
+    {
+        UpdateLibraryAnimationTimer();
+    }
+
     partial void OnEnableAnimationsChanged(bool value)
     {
+        UpdateLibraryAnimationTimer();
         SaveSettings();
     }
 
@@ -346,6 +361,7 @@ public partial class MainViewModel : ViewModelBase
             }
         }
         SavePets();
+        UpdateLibraryAnimationTimer();
     }
 
     public void AddImportedPet(string name, string? filePath)
@@ -362,5 +378,58 @@ public partial class MainViewModel : ViewModelBase
         Assets.Add(newPet);
         SelectedAsset = newPet;
         SavePets();
+        UpdateLibraryAnimationTimer();
+    }
+
+    // === Loop Centralizado e Econômico para Pré-visualização na Biblioteca (respeita o FPS das configurações) ===
+    private DispatcherTimer? _libraryAnimationTimer;
+    private readonly System.Diagnostics.Stopwatch _libraryStopwatch = new();
+
+    public void UpdateLibraryAnimationTimer()
+    {
+        if (EnableAnimations && IsLocalSelected && Fps > 0 && Assets.Any(a => a.MediaType != "Image"))
+        {
+            int safeFps = Math.Clamp(Fps, 1, 60);
+            var targetInterval = TimeSpan.FromSeconds(1.0 / safeFps);
+
+            if (_libraryAnimationTimer == null)
+            {
+                _libraryAnimationTimer = new DispatcherTimer(DispatcherPriority.Render);
+                _libraryAnimationTimer.Tick += OnLibraryAnimationTick;
+            }
+
+            _libraryAnimationTimer.Interval = targetInterval;
+
+            if (!_libraryAnimationTimer.IsEnabled)
+            {
+                _libraryStopwatch.Restart();
+                _libraryAnimationTimer.Start();
+            }
+        }
+        else
+        {
+            _libraryAnimationTimer?.Stop();
+            _libraryStopwatch.Reset();
+        }
+    }
+
+    private void OnLibraryAnimationTick(object? sender, EventArgs e)
+    {
+        if (!IsLocalSelected || !EnableAnimations || Fps <= 0)
+        {
+            _libraryAnimationTimer?.Stop();
+            _libraryStopwatch.Reset();
+            return;
+        }
+
+        long elapsedMs = _libraryStopwatch.ElapsedMilliseconds;
+
+        foreach (var asset in Assets)
+        {
+            if (asset.MediaType != "Image")
+            {
+                asset.AdvancePreviewFrame(elapsedMs);
+            }
+        }
     }
 }

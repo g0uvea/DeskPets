@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -9,6 +10,8 @@ namespace DeskPets.Core.Media;
 
 public static class MediaDecoder
 {
+    private static readonly ConcurrentDictionary<string, List<MediaFrame>> _framesCache = new();
+
     private static readonly HashSet<string> StaticImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".png", ".jpg", ".jpeg", ".bmp", ".ico"
@@ -199,19 +202,45 @@ public static class MediaDecoder
     }
 
     /// <summary>
-    /// Extrai múltiplos quadros de imagens animadas (GIF, WebP) ou vídeos respeitando o FPS informado (até 30 segundos).
+    /// Limpa todo o cache de quadros da memória.
     /// </summary>
-    public static async Task<List<MediaFrame>> ExtractFramesAsync(string filePath, int targetFps = 30, int maxDurationSeconds = 30)
-    {
-        var frames = new List<MediaFrame>();
-        if (!File.Exists(filePath)) return frames;
+    public static void ClearCache() => _framesCache.Clear();
 
+    /// <summary>
+    /// Invalida o cache de um arquivo específico.
+    /// </summary>
+    public static void InvalidateCache(string filePath)
+    {
+        foreach (var key in _framesCache.Keys)
+        {
+            if (key.StartsWith(filePath, StringComparison.OrdinalIgnoreCase))
+            {
+                _framesCache.TryRemove(key, out _);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extrai múltiplos quadros de imagens animadas (GIF, WebP) ou vídeos respeitando o FPS informado (até 30 segundos).
+    /// Utiliza cache em memória para que chamadas subsequentes respondam em 0ms.
+    /// </summary>
+    public static async Task<List<MediaFrame>> ExtractFramesAsync(string filePath, int targetFps = 60, int maxDurationSeconds = 30)
+    {
+        if (!File.Exists(filePath)) return new List<MediaFrame>();
+
+        string cacheKey = $"{filePath}_{targetFps}_{maxDurationSeconds}_hd640";
+        if (_framesCache.TryGetValue(cacheKey, out var cached) && cached.Count > 0)
+        {
+            return cached;
+        }
+
+        var frames = new List<MediaFrame>();
         string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
         // Para imagens animadas usando SkiaSharp SKCodec
         if (AnimatedImageExtensions.Contains(ext))
         {
-            return await Task.Run(() =>
+            frames = await Task.Run(() =>
             {
                 var list = new List<MediaFrame>();
                 try
@@ -254,22 +283,28 @@ public static class MediaDecoder
                 return list;
             });
         }
-
-        // Para vídeos (mp4, webm, mov, av1), usa FFmpeg para extrair frames no FPS alvo
-        if (VideoExtensions.Contains(ext))
+        else if (VideoExtensions.Contains(ext))
         {
-            return await ExtractVideoFramesViaFfmpegAsync(filePath, targetFps, maxDurationSeconds);
+            // Para vídeos (mp4, webm, mov, av1), usa FFmpeg ultra-otimizado em qualidade HD e até 60 FPS
+            frames = await ExtractVideoFramesViaFfmpegAsync(filePath, targetFps, maxDurationSeconds);
+        }
+        else
+        {
+            // Imagem estática simples: 1 frame
+            var singleThumb = await ExtractThumbnailBytesAsync(filePath);
+            if (singleThumb != null)
+            {
+                frames.Add(new MediaFrame
+                {
+                    Data = singleThumb,
+                    Duration = TimeSpan.FromSeconds(1)
+                });
+            }
         }
 
-        // Imagem estática simples: 1 frame
-        var singleThumb = await ExtractThumbnailBytesAsync(filePath);
-        if (singleThumb != null)
+        if (frames.Count > 0)
         {
-            frames.Add(new MediaFrame
-            {
-                Data = singleThumb,
-                Duration = TimeSpan.FromSeconds(1)
-            });
+            _framesCache[cacheKey] = frames;
         }
 
         return frames;
@@ -323,13 +358,13 @@ public static class MediaDecoder
                 Directory.CreateDirectory(tempDir);
                 string outputPattern = Path.Combine(tempDir, "frame_%04d.png");
 
-                // Extrai com taxa de amostragem de pelo menos 30 FPS para permitir alta fluidez sem perda de velocidade
-                int safeFps = Math.Clamp(Math.Max(30, fps), 30, 60);
+                // Permite até 60 FPS reais para máxima fluidez nos vídeos
+                int safeFps = Math.Clamp(fps, 15, 60);
 
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = $"-loglevel error -t {maxDurationSeconds} -i \"{filePath}\" -vf \"fps={safeFps},scale=280:280:force_original_aspect_ratio=decrease\" \"{outputPattern}\"",
+                    Arguments = $"-loglevel error -t {maxDurationSeconds} -i \"{filePath}\" -vf \"fps={safeFps},scale=w=640:h=640:force_original_aspect_ratio=decrease\" -compression_level 1 \"{outputPattern}\"",
                     RedirectStandardOutput = false,
                     RedirectStandardError = true,
                     UseShellExecute = false,

@@ -98,6 +98,7 @@
                                     <Image
                                         Source="{Binding Thumbnail}"
                                         Stretch="Uniform"
+                                        RenderOptions.BitmapInterpolationMode="HighQuality"
                                         Margin="6"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"

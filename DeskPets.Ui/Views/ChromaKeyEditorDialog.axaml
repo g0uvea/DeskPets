@@ -1,0 +1,338 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="DeskPets.Ui.Views.ChromaKeyEditorDialog"
+    Title="Chroma Key"
+    Width="490"
+    SizeToContent="Height"
+    CanResize="False"
+    WindowDecorations="None"
+    WindowStartupLocation="CenterOwner"
+    Background="Transparent"
+    TransparencyLevelHint="Transparent,None">
+
+    <Window.Styles>
+        <!-- Estilo Base para os Botões do Diálogo (centralização perfeita de texto) -->
+        <Style Selector="Button.dialog-btn">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+
+        <!-- Botão Secundário (#251F31 com hover elegante) -->
+        <Style Selector="Button.dialog-btn-secondary">
+            <Setter Property="Background" Value="#251F31" />
+            <Setter Property="Foreground" Value="#8F7EA9" />
+        </Style>
+        <Style Selector="Button.dialog-btn-secondary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#352D46" />
+            <Setter Property="Foreground" Value="#EADBFF" />
+        </Style>
+
+        <!-- Botão de Perigo/Desativar (#251F31 com texto vermelho suave) -->
+        <Style Selector="Button.dialog-btn-danger">
+            <Setter Property="Background" Value="#251F31" />
+            <Setter Property="Foreground" Value="#FF6B6B" />
+        </Style>
+        <Style Selector="Button.dialog-btn-danger:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#3D2028" />
+            <Setter Property="Foreground" Value="#FF8585" />
+        </Style>
+
+        <!-- Botão Primário (#4A3E63 com texto branco e hover destacado) -->
+        <Style Selector="Button.dialog-btn-primary">
+            <Setter Property="Background" Value="#4A3E63" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.dialog-btn-primary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#5E4F7D" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+    </Window.Styles>
+
+    <!-- Borda Principal Arrastável (Suporta arrastar janela por qualquer área de fundo) -->
+    <Border
+        Background="#1B1724"
+        BorderBrush="#352D46"
+        BorderThickness="1.5"
+        CornerRadius="16"
+        Padding="20"
+        Margin="10"
+        PointerPressed="OnWindowPointerPressed"
+        PointerMoved="OnWindowPointerMoved"
+        PointerReleased="OnWindowPointerReleased">
+
+        <StackPanel Spacing="14">
+            <!-- Header com Ícone, Título e Botão Fechar -->
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <Border
+                    Grid.Column="0"
+                    Width="40"
+                    Height="40"
+                    CornerRadius="12"
+                    Background="#2C243B"
+                    Margin="0,0,12,0">
+                    <TextBlock
+                        Text="🪄"
+                        FontSize="20"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock
+                        Name="TitleText"
+                        Text="Chroma Key (Fundo Transparente)"
+                        FontSize="15"
+                        FontWeight="Bold"
+                        Foreground="#EADBFF" />
+                    <TextBlock
+                        Name="SubtitleText"
+                        Text="Clique na imagem com o conta-gotas para remover o fundo"
+                        FontSize="12"
+                        Foreground="#8F7EA9" />
+                </StackPanel>
+
+                <!-- Botão Fechar (✕) no canto superior direito -->
+                <Button
+                    Grid.Column="2"
+                    Width="28"
+                    Height="28"
+                    CornerRadius="14"
+                    Background="Transparent"
+                    Foreground="#8F7EA9"
+                    BorderThickness="0"
+                    Padding="0"
+                    Cursor="Hand"
+                    VerticalAlignment="Top"
+                    HorizontalAlignment="Right"
+                    Click="OnCancelClick">
+                    <TextBlock
+                        Text="✕"
+                        FontSize="13"
+                        FontWeight="Bold"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Button>
+            </Grid>
+
+            <!-- Área de Preview Interativo com Fundo Quadriculado Transparente -->
+            <Border
+                Width="280"
+                Height="280"
+                CornerRadius="12"
+                ClipToBounds="True"
+                BorderBrush="#352D46"
+                BorderThickness="1.5"
+                HorizontalAlignment="Center">
+                
+                <Border.Background>
+                    <VisualBrush TileMode="Tile" SourceRect="0,0,16,16" DestinationRect="0,0,16,16">
+                        <VisualBrush.Visual>
+                            <Canvas Width="16" Height="16" Background="#181420">
+                                <Rectangle Canvas.Left="0" Canvas.Top="0" Width="8" Height="8" Fill="#241E2F" />
+                                <Rectangle Canvas.Left="8" Canvas.Top="8" Width="8" Height="8" Fill="#241E2F" />
+                            </Canvas>
+                        </VisualBrush.Visual>
+                    </VisualBrush>
+                </Border.Background>
+
+                <Panel>
+                    <Image
+                        Name="PreviewImage"
+                        Stretch="Uniform"
+                        Cursor="Cross"
+                        PointerPressed="OnPreviewPointerPressed"
+                        PointerMoved="OnPreviewPointerMoved" />
+
+                    <!-- Indicador flutuante de conta-gotas -->
+                    <Border
+                        Name="EyedropperHintPill"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,8"
+                        Background="#80000000"
+                        CornerRadius="10"
+                        Padding="10,4"
+                        IsHitTestVisible="False">
+                        <TextBlock
+                            Name="EyedropperHintText"
+                            Text="🎯 Clique para capturar cor"
+                            FontSize="11"
+                            Foreground="#EADBFF" />
+                    </Border>
+                </Panel>
+            </Border>
+
+            <!-- Painel de Seleção de Cor -->
+            <Border
+                Background="#251F31"
+                CornerRadius="10"
+                Padding="12,10">
+                <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
+                    <!-- Amostra circular da cor selecionada -->
+                    <Border
+                        Name="ColorSampleCircle"
+                        Grid.Column="0"
+                        Width="28"
+                        Height="28"
+                        CornerRadius="14"
+                        Background="#00FF00"
+                        BorderBrush="#8F7EA9"
+                        BorderThickness="1.5"
+                        Margin="0,0,10,0" />
+
+                    <!-- Código Hex e Rótulo -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                        <TextBlock
+                            Name="HexColorText"
+                            Text="#00FF00"
+                            FontSize="13"
+                            FontWeight="Bold"
+                            Foreground="#EADBFF" />
+                        <TextBlock
+                            Name="ColorLabelText"
+                            Text="Cor Chave Selecionada"
+                            FontSize="11"
+                            Foreground="#8F7EA9" />
+                    </StackPanel>
+
+                    <!-- Toggle Ativar/Desativar -->
+                    <CheckBox
+                        Name="EnableChromaCheckBox"
+                        Grid.Column="2"
+                        Content="Ativar"
+                        IsChecked="True"
+                        Foreground="#EADBFF"
+                        FontSize="12"
+                        IsCheckedChanged="OnEnableChromaCheckedChanged" />
+                </Grid>
+            </Border>
+
+            <!-- Sliders de Ajuste Fino (Tolerância e Suavidade) -->
+            <StackPanel Spacing="10">
+                <!-- Tolerância / Similaridade -->
+                <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBlock
+                            Name="ToleranceLabel"
+                            Text="Tolerância de Cor"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="#EADBFF" />
+                        <TextBlock
+                            Name="ToleranceValueText"
+                            Grid.Column="1"
+                            Text="35%"
+                            FontSize="12"
+                            FontWeight="Bold"
+                            Foreground="#8F7EA9" />
+                    </Grid>
+                    <Slider
+                        Name="ToleranceSlider"
+                        Minimum="1"
+                        Maximum="100"
+                        Value="35"
+                        ValueChanged="OnToleranceSliderChanged" />
+                </StackPanel>
+
+                <!-- Suavidade das Bordas (Anti-aliasing feather) -->
+                <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBlock
+                            Name="SmoothnessLabel"
+                            Text="Suavidade de Borda"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="#EADBFF" />
+                        <TextBlock
+                            Name="SmoothnessValueText"
+                            Grid.Column="1"
+                            Text="15%"
+                            FontSize="12"
+                            FontWeight="Bold"
+                            Foreground="#8F7EA9" />
+                    </Grid>
+                    <Slider
+                        Name="SmoothnessSlider"
+                        Minimum="0"
+                        Maximum="50"
+                        Value="15"
+                        ValueChanged="OnSmoothnessSliderChanged" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Botões de Ação Perfeitamente Alinhados -->
+            <Grid ColumnDefinitions="Auto, Auto, *, Auto, Auto" Margin="0,6,0,0">
+                <!-- Desativar Efeito -->
+                <Button
+                    Name="DisableBtn"
+                    Grid.Column="0"
+                    Classes="dialog-btn dialog-btn-danger"
+                    Padding="14,0"
+                    Click="OnDisableClick">
+                    <TextBlock
+                        Name="DisableBtnText"
+                        Text="Desativar Efeito"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center" />
+                </Button>
+
+                <!-- Botão Resetar (Verde Lime + 35% Tolerância + 15% Suavidade) -->
+                <Button
+                    Name="ResetBtn"
+                    Grid.Column="1"
+                    Classes="dialog-btn dialog-btn-secondary"
+                    Padding="12,0"
+                    Margin="8,0,0,0"
+                    Click="OnResetClick">
+                    <TextBlock
+                        Name="ResetBtnText"
+                        Text="↺ Resetar"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center" />
+                </Button>
+
+                <!-- Cancelar -->
+                <Button
+                    Name="CancelBtn"
+                    Grid.Column="3"
+                    Classes="dialog-btn dialog-btn-secondary"
+                    Padding="16,0"
+                    Margin="0,0,8,0"
+                    Click="OnCancelClick">
+                    <TextBlock
+                        Name="CancelBtnText"
+                        Text="Cancelar"
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center" />
+                </Button>
+
+                <!-- Salvar e Aplicar -->
+                <Button
+                    Name="SaveBtn"
+                    Grid.Column="4"
+                    Classes="dialog-btn dialog-btn-primary"
+                    Padding="18,0"
+                    Click="OnSaveClick">
+                    <TextBlock
+                        Name="SaveBtnText"
+                        Text="Salvar e Aplicar"
+                        FontSize="13"
+                        FontWeight="Bold"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center" />
+                </Button>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

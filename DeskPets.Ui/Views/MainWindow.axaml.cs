@@ -80,12 +80,18 @@ public partial class MainWindow : Window
                 }
             }
 
-            var petWindow = new PetSpawnWindow(
+            PetSpawnWindow? petWindow = null;
+            petWindow = new PetSpawnWindow(
                 pet,
                 vm.Fps,
                 vm.PetScale,
                 vm.IsAlwaysOnTop,
-                vm.EnableAnimations);
+                vm.EnableAnimations,
+                () =>
+                {
+                    vm.SavePets();
+                },
+                vm.SelectedLanguage);
 
             _activePetWindows.Add(petWindow);
             pet.ActiveInstanceCount++;
