@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using DeskPets.Core.Media;
@@ -52,6 +53,45 @@ public partial class PetSpawnWindow : Window
 
   public bool IsAnimationsEnabled { get; private set; } = true;
   public AssetItemViewModel? Pet { get; }
+
+  private DispatcherTimer? _spinnerTimer;
+  private double _spinnerAngle = 0;
+
+  private void SetLoadingState(bool isLoading)
+  {
+    LoadingIndicator.IsVisible = isLoading;
+    PetImage.Opacity = isLoading ? 0.6 : 1.0;
+
+    if (isLoading)
+    {
+      LoadingText.Text = _language switch
+      {
+        "English" => "Loading...",
+        "Español" => "Cargando...",
+        _ => "Carregando..."
+      };
+
+      if (_spinnerTimer == null)
+      {
+        _spinnerTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(25), DispatcherPriority.Render, (s, e) =>
+        {
+          _spinnerAngle = (_spinnerAngle + 12) % 360;
+          if (SpinnerArc.RenderTransform is RotateTransform rt)
+          {
+            rt.Angle = _spinnerAngle;
+          }
+        });
+      }
+      if (!_spinnerTimer.IsEnabled)
+      {
+        _spinnerTimer.Start();
+      }
+    }
+    else
+    {
+      _spinnerTimer?.Stop();
+    }
+  }
 
   public PetSpawnWindow()
   {
@@ -192,31 +232,56 @@ public partial class PetSpawnWindow : Window
     }
   }
 
-  private void InitializePlayback(AssetItemViewModel pet)
+  private async void InitializePlayback(AssetItemViewModel pet)
   {
     bool hasActiveChromaKey = pet.ChromaKey != null && pet.ChromaKey.IsEnabled;
 
     // 1. Se NÃO tem chroma key ativado e o card da biblioteca já tem frames prontos, importa em 0ms!
     if (!hasActiveChromaKey && pet.HasPreviewFrames)
     {
+      SetLoadingState(false);
       ImportFramesFromPet(pet);
       pet.PreviewFramesUpdated += OnPetFramesUpdated;
       return;
     }
 
-    // 2. Se tem chroma key OU se os frames precisam ser processados para este pet:
-    if (pet.CachedRawFrames.Count > 0)
-    {
-      _rawFrames.Clear();
-      _rawFrames.AddRange(pet.CachedRawFrames);
-      _ = ApplyFramesToPlaybackAsync(_rawFrames, pet.ChromaKey);
-      return;
-    }
+    // Se ainda precisa carregar da mídia ou processar efeitos, ativa animação de carregamento
+    SetLoadingState(true);
 
-    // 3. Caso contrário, carrega do arquivo
-    if (!string.IsNullOrEmpty(pet.FilePath))
+    try
     {
-      _ = LoadAnimationAsync(pet.FilePath, _fps);
+      // Se o pet ainda estiver carregando os quadros em background, aguarda finalizar
+      if (!pet.HasPreviewFrames && !string.IsNullOrEmpty(pet.FilePath))
+      {
+        await pet.WaitForFramesLoadedAsync();
+      }
+
+      // Se não tem chroma key e agora tem frames:
+      if (!hasActiveChromaKey && pet.HasPreviewFrames)
+      {
+        ImportFramesFromPet(pet);
+        pet.PreviewFramesUpdated += OnPetFramesUpdated;
+        return;
+      }
+
+      // Se tem chroma key OU se os frames precisam ser processados para este pet:
+      if (pet.CachedRawFrames.Count > 0)
+      {
+        _rawFrames.Clear();
+        _rawFrames.AddRange(pet.CachedRawFrames);
+        await ApplyFramesToPlaybackAsync(_rawFrames, pet.ChromaKey);
+        return;
+      }
+
+      // Caso contrário, carrega do arquivo
+      if (!string.IsNullOrEmpty(pet.FilePath))
+      {
+        await LoadAnimationAsync(pet.FilePath, _fps);
+      }
+    }
+    finally
+    {
+      SetLoadingState(false);
     }
   }
 
@@ -277,8 +342,7 @@ public partial class PetSpawnWindow : Window
   {
     try
     {
-      // Amostragem robusta com base em pelo menos 30 FPS para manter suavidade se o FPS for aumentado
-      var rawFrames = await MediaDecoder.ExtractFramesAsync(filePath, Math.Max(30, fps));
+      var rawFrames = await MediaDecoder.ExtractFramesAsync(filePath, 60);
       _rawFrames.Clear();
       _rawFrames.AddRange(rawFrames);
 
@@ -292,7 +356,7 @@ public partial class PetSpawnWindow : Window
 
   /// <summary>
   /// Processa os quadros em memória com ou sem Chroma Key utilizando paralelismo multi-core ultra-rápido.
-  /// Define a duração completa da animação desde o início para eliminar qualquer repetição no começo do vídeo.
+  /// Decodifica 100% dos quadros antes de iniciar para garantir reprodução suave do início ao fim sem travamentos.
   /// </summary>
   private async System.Threading.Tasks.Task ApplyFramesToPlaybackAsync(List<MediaFrame> rawFrames, ChromaKeyConfig? chromaKey)
   {
@@ -307,11 +371,13 @@ public partial class PetSpawnWindow : Window
     var fullCumulative = new List<long>();
     foreach (var rf in rawFrames)
     {
-      var dur = rf.Duration > TimeSpan.Zero ? rf.Duration : TimeSpan.FromMilliseconds(33);
+      var dur = rf.Duration > TimeSpan.Zero ? rf.Duration : TimeSpan.FromMilliseconds(16);
       fullDuration += dur;
       fullRunningMs += (long)dur.TotalMilliseconds;
       fullCumulative.Add(fullRunningMs);
     }
+
+    var rawSnapshot = rawFrames.ToArray();
 
     // Feedback visual imediato: atualiza o 1º frame no UI thread em 1ms!
     if (applyChroma && rawFrames.Count > 0)
@@ -334,53 +400,52 @@ public partial class PetSpawnWindow : Window
       catch { }
     }
 
-    var rawSnapshot = rawFrames.ToArray();
-    int initialBatchCount = Math.Min(15, rawSnapshot.Length);
-    var processedBytes = new byte[rawSnapshot.Length][];
-
-    // FASE 1: Processa o lote inicial de 15 quadros em paralelo (~10ms) para início imediato
-    var initialFrames = await System.Threading.Tasks.Task.Run(() =>
+    // Processa TODOS os quadros em paralelo multi-core (~300ms com Chroma Key para 700 frames)
+    var processedFrames = await System.Threading.Tasks.Task.Run(() =>
     {
-      System.Threading.Tasks.Parallel.For(0, initialBatchCount, i =>
-          {
-            byte[] data = rawSnapshot[i].Data;
-            if (applyChroma)
-            {
-              var keyed = ChromaKeyProcessor.ApplyChromaKeyToPngBytes(
-                      data,
-                      chromaKey!.KeyColorHex,
-                      chromaKey.Similarity,
-                      chromaKey.Smoothness);
-
-              if (keyed != null) data = keyed;
-            }
-            processedBytes[i] = data;
-          });
-
-      var framesList = new List<AnimationPlaybackFrame>();
-      for (int i = 0; i < initialBatchCount; i++)
+      var framesArray = new AnimationPlaybackFrame[rawSnapshot.Length];
+      System.Threading.Tasks.Parallel.For(0, rawSnapshot.Length, i =>
       {
+        byte[] data = rawSnapshot[i].Data;
+        if (applyChroma)
+        {
+          var keyed = ChromaKeyProcessor.ApplyChromaKeyToPngBytes(
+              data,
+              chromaKey!.KeyColorHex,
+              chromaKey.Similarity,
+              chromaKey.Smoothness);
+
+          if (keyed != null) data = keyed;
+        }
+
         try
         {
-          using var ms = new MemoryStream(processedBytes[i]);
+          using var ms = new MemoryStream(data);
           var bmp = new Bitmap(ms);
-          var dur = rawSnapshot[i].Duration > TimeSpan.Zero ? rawSnapshot[i].Duration : TimeSpan.FromMilliseconds(33);
-          framesList.Add(new AnimationPlaybackFrame(bmp, dur));
+          var dur = rawSnapshot[i].Duration > TimeSpan.Zero ? rawSnapshot[i].Duration : TimeSpan.FromMilliseconds(16);
+          framesArray[i] = new AnimationPlaybackFrame(bmp, dur);
         }
         catch { }
-      }
+      });
 
-      return framesList;
+      var list = new List<AnimationPlaybackFrame>(rawSnapshot.Length);
+      for (int i = 0; i < framesArray.Length; i++)
+      {
+        if (framesArray[i].Bitmap != null)
+        {
+          list.Add(framesArray[i]);
+        }
+      }
+      return list;
     });
 
-    if (initialFrames.Count == 0) return;
+    if (processedFrames.Count == 0) return;
 
     await Dispatcher.UIThread.InvokeAsync(() =>
     {
       _animationFrames.Clear();
-      _animationFrames.AddRange(initialFrames);
+      _animationFrames.AddRange(processedFrames);
 
-      // Importante: define a lista acumulada e a duração COMPLETA do vídeo desde já!
       _cumulativeFrameEndMs.Clear();
       _cumulativeFrameEndMs.AddRange(fullCumulative);
       _totalAnimationDuration = fullDuration;
@@ -398,54 +463,21 @@ public partial class PetSpawnWindow : Window
         PetImage.Source = _animationFrames[0].Bitmap;
       }
     });
-
-    // FASE 2: Processa todos os quadros restantes em paralelo multi-core (~300ms) e anexa sem reiniciar
-    if (rawSnapshot.Length > initialBatchCount)
-    {
-      _ = System.Threading.Tasks.Task.Run(async () =>
-      {
-        System.Threading.Tasks.Parallel.For(initialBatchCount, rawSnapshot.Length, i =>
-              {
-                byte[] data = rawSnapshot[i].Data;
-                if (applyChroma)
-                {
-                  var keyed = ChromaKeyProcessor.ApplyChromaKeyToPngBytes(
-                            data,
-                            chromaKey!.KeyColorHex,
-                            chromaKey.Similarity,
-                            chromaKey.Smoothness);
-
-                  if (keyed != null) data = keyed;
-                }
-                processedBytes[i] = data;
-              });
-
-        var remainingFrames = new List<AnimationPlaybackFrame>();
-        for (int i = initialBatchCount; i < rawSnapshot.Length; i++)
-        {
-          try
-          {
-            using var ms = new MemoryStream(processedBytes[i]);
-            var bmp = new Bitmap(ms);
-            var dur = rawSnapshot[i].Duration > TimeSpan.Zero ? rawSnapshot[i].Duration : TimeSpan.FromMilliseconds(33);
-            remainingFrames.Add(new AnimationPlaybackFrame(bmp, dur));
-          }
-          catch { }
-        }
-
-        await Dispatcher.UIThread.InvokeAsync(() =>
-              {
-                _animationFrames.AddRange(remainingFrames);
-              });
-      });
-    }
   }
 
-  public void ApplyCurrentChromaKey(ChromaKeyConfig? config)
+  public async void ApplyCurrentChromaKey(ChromaKeyConfig? config)
   {
     if (_rawFrames.Count > 0)
     {
-      _ = ApplyFramesToPlaybackAsync(_rawFrames, config);
+      SetLoadingState(true);
+      try
+      {
+        await ApplyFramesToPlaybackAsync(_rawFrames, config);
+      }
+      finally
+      {
+        SetLoadingState(false);
+      }
     }
   }
 
@@ -571,6 +603,7 @@ public partial class PetSpawnWindow : Window
   private void OnClosePetClick(object? sender, RoutedEventArgs e)
   {
     _animationTimer?.Stop();
+    _spinnerTimer?.Stop();
     Close();
   }
 
@@ -583,6 +616,7 @@ public partial class PetSpawnWindow : Window
 
     _playbackStopwatch.Stop();
     _animationTimer?.Stop();
+    _spinnerTimer?.Stop();
 
     _animationFrames.Clear();
     _cumulativeFrameEndMs.Clear();

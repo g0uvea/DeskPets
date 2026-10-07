@@ -54,5 +54,42 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             IsVisible="False" />
+
+        <!-- Overlay Indicador de Carregamento Estiloso (Dark Glass com Anel Giratório Violeta) -->
+        <Border
+            Name="LoadingIndicator"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="#E61B1724"
+            BorderBrush="#594C73"
+            BorderThickness="1"
+            CornerRadius="16"
+            Padding="14,10"
+            BoxShadow="0 4 16 #80000000"
+            IsVisible="False">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Arc
+                    Name="SpinnerArc"
+                    Width="18"
+                    Height="18"
+                    Stroke="#A855F7"
+                    StrokeThickness="2.5"
+                    StrokeLineCap="Round"
+                    StartAngle="0"
+                    SweepAngle="270"
+                    RenderTransformOrigin="50%,50%">
+                    <Arc.RenderTransform>
+                        <RotateTransform Angle="0" />
+                    </Arc.RenderTransform>
+                </Arc>
+                <TextBlock
+                    Name="LoadingText"
+                    Text="Carregando..."
+                    Foreground="#EADBFF"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
     </Panel>
 </Window>

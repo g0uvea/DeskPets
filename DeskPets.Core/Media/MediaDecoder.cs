@@ -11,6 +11,7 @@ namespace DeskPets.Core.Media;
 public static class MediaDecoder
 {
     private static readonly ConcurrentDictionary<string, List<MediaFrame>> _framesCache = new();
+    private static readonly ConcurrentDictionary<string, Task<List<MediaFrame>>> _inFlightTasks = new();
 
     private static readonly HashSet<string> StaticImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -204,7 +205,11 @@ public static class MediaDecoder
     /// <summary>
     /// Limpa todo o cache de quadros da memória.
     /// </summary>
-    public static void ClearCache() => _framesCache.Clear();
+    public static void ClearCache()
+    {
+        _framesCache.Clear();
+        _inFlightTasks.Clear();
+    }
 
     /// <summary>
     /// Invalida o cache de um arquivo específico.
@@ -218,22 +223,49 @@ public static class MediaDecoder
                 _framesCache.TryRemove(key, out _);
             }
         }
+        foreach (var key in _inFlightTasks.Keys)
+        {
+            if (key.StartsWith(filePath, StringComparison.OrdinalIgnoreCase))
+            {
+                _inFlightTasks.TryRemove(key, out _);
+            }
+        }
     }
 
     /// <summary>
     /// Extrai múltiplos quadros de imagens animadas (GIF, WebP) ou vídeos respeitando o FPS informado (até 30 segundos).
-    /// Utiliza cache em memória para que chamadas subsequentes respondam em 0ms.
+    /// Utiliza cache em memória e desduplicação de tarefas concorrentes para evitar múltiplos FFmpeg paralelos no mesmo arquivo.
     /// </summary>
-    public static async Task<List<MediaFrame>> ExtractFramesAsync(string filePath, int targetFps = 60, int maxDurationSeconds = 30)
+    public static Task<List<MediaFrame>> ExtractFramesAsync(string filePath, int targetFps = 60, int maxDurationSeconds = 30)
     {
-        if (!File.Exists(filePath)) return new List<MediaFrame>();
+        if (!File.Exists(filePath)) return Task.FromResult(new List<MediaFrame>());
 
         string cacheKey = $"{filePath}_{targetFps}_{maxDurationSeconds}_hd640";
         if (_framesCache.TryGetValue(cacheKey, out var cached) && cached.Count > 0)
         {
-            return cached;
+            return Task.FromResult(cached);
         }
 
+        return _inFlightTasks.GetOrAdd(cacheKey, key => Task.Run(async () =>
+        {
+            try
+            {
+                var frames = await ExtractFramesInternalAsync(filePath, targetFps, maxDurationSeconds);
+                if (frames.Count > 0)
+                {
+                    _framesCache[key] = frames;
+                }
+                return frames;
+            }
+            finally
+            {
+                _inFlightTasks.TryRemove(key, out _);
+            }
+        }));
+    }
+
+    private static async Task<List<MediaFrame>> ExtractFramesInternalAsync(string filePath, int targetFps, int maxDurationSeconds)
+    {
         var frames = new List<MediaFrame>();
         string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
@@ -300,11 +332,6 @@ public static class MediaDecoder
                     Duration = TimeSpan.FromSeconds(1)
                 });
             }
-        }
-
-        if (frames.Count > 0)
-        {
-            _framesCache[cacheKey] = frames;
         }
 
         return frames;

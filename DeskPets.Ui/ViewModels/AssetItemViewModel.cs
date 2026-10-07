@@ -50,7 +50,9 @@ public partial class AssetItemViewModel : ViewModelBase
     private long _totalPreviewDurationMs = 0;
     private int _previewFrameIndex = 0;
     private readonly List<MediaFrame> _cachedRawFrames = new();
+    private readonly TaskCompletionSource _framesLoadedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    public Task WaitForFramesLoadedAsync() => _framesLoadedTcs.Task;
     public IReadOnlyList<MediaFrame> CachedRawFrames => _cachedRawFrames;
     public IReadOnlyList<Bitmap> PreviewFrames => _previewFrames;
     public IReadOnlyList<long> CumulativePreviewEndMs => _cumulativePreviewEndMs;
@@ -74,10 +76,17 @@ public partial class AssetItemViewModel : ViewModelBase
 
     public async Task LoadMediaAsync()
     {
-        await LoadThumbnailAsync();
-        if (MediaType != "Image")
+        try
         {
-            await LoadPreviewFramesAsync();
+            await LoadThumbnailAsync();
+            if (MediaType != "Image")
+            {
+                await LoadPreviewFramesAsync();
+            }
+        }
+        finally
+        {
+            _framesLoadedTcs.TrySetResult();
         }
     }
 
@@ -88,7 +97,7 @@ public partial class AssetItemViewModel : ViewModelBase
 
         try
         {
-            byte[]? thumbBytes = await MediaDecoder.ExtractThumbnailBytesAsync(FilePath, 140, 140);
+            byte[]? thumbBytes = await MediaDecoder.ExtractThumbnailBytesAsync(FilePath, 640, 640);
             if (thumbBytes != null && thumbBytes.Length > 0)
             {
                 await Dispatcher.UIThread.InvokeAsync(() =>
@@ -132,35 +141,48 @@ public partial class AssetItemViewModel : ViewModelBase
             if (_cachedRawFrames.Count > 1)
             {
                 var rawSnapshot = _cachedRawFrames.ToArray();
+                var bitmaps = new Bitmap[rawSnapshot.Length];
+                var cum = new List<long>(rawSnapshot.Length);
+                long running = 0;
 
-                // FASE 1: Decodifica imediatamente os primeiros quadros (ex: 12 frames ~= 400ms de vídeo)
-                // Inicia a animação no card da biblioteca em menos de 50ms (sem filtros, mídia original limpa)
-                int initialBatchCount = Math.Min(12, rawSnapshot.Length);
-                var (initialBitmaps, initialCum, initialTotalMs) = await Task.Run(() =>
+                for (int i = 0; i < rawSnapshot.Length; i++)
                 {
-                    var bmps = new List<Bitmap>();
-                    var cum = new List<long>();
-                    long running = 0;
+                    var rf = rawSnapshot[i];
+                    long frameMs = (long)(rf.Duration > TimeSpan.Zero ? rf.Duration.TotalMilliseconds : 16);
+                    running += frameMs;
+                    cum.Add(running);
+                }
+                long finalTotalMs = running;
 
-                    for (int i = 0; i < initialBatchCount; i++)
+                // Decodifica TODOS os quadros em paralelo usando todos os núcleos da CPU (~70ms para 700 frames)
+                await Task.Run(() =>
+                {
+                    Parallel.For(0, rawSnapshot.Length, i =>
                     {
-                        var rf = rawSnapshot[i];
-                        using var ms = new MemoryStream(rf.Data);
-                        bmps.Add(new Bitmap(ms));
-
-                        long frameMs = (long)(rf.Duration > TimeSpan.Zero ? rf.Duration.TotalMilliseconds : 33);
-                        running += frameMs;
-                        cum.Add(running);
-                    }
-                    return (bmps, cum, running);
+                        try
+                        {
+                            using var ms = new MemoryStream(rawSnapshot[i].Data);
+                            bitmaps[i] = new Bitmap(ms);
+                        }
+                        catch { }
+                    });
                 });
+
+                var validBitmaps = new List<Bitmap>(rawSnapshot.Length);
+                for (int i = 0; i < bitmaps.Length; i++)
+                {
+                    if (bitmaps[i] != null)
+                    {
+                        validBitmaps.Add(bitmaps[i]);
+                    }
+                }
 
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     ClearPreviewFrames();
-                    _previewFrames.AddRange(initialBitmaps);
-                    _cumulativePreviewEndMs.AddRange(initialCum);
-                    _totalPreviewDurationMs = initialTotalMs;
+                    _previewFrames.AddRange(validBitmaps);
+                    _cumulativePreviewEndMs.AddRange(cum);
+                    _totalPreviewDurationMs = finalTotalMs;
                     _previewFrameIndex = 0;
                     if (_previewFrames.Count > 0)
                     {
@@ -168,38 +190,6 @@ public partial class AssetItemViewModel : ViewModelBase
                     }
                     PreviewFramesUpdated?.Invoke();
                 });
-
-                // FASE 2: Processa o restante dos quadros em background e anexa sem congelar a reprodução
-                if (rawSnapshot.Length > initialBatchCount)
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        var remainingBitmaps = new List<Bitmap>();
-                        var remainingCum = new List<long>();
-                        long running = initialTotalMs;
-
-                        for (int i = initialBatchCount; i < rawSnapshot.Length; i++)
-                        {
-                            var rf = rawSnapshot[i];
-                            using var ms = new MemoryStream(rf.Data);
-                            remainingBitmaps.Add(new Bitmap(ms));
-
-                            long frameMs = (long)(rf.Duration > TimeSpan.Zero ? rf.Duration.TotalMilliseconds : 33);
-                            running += frameMs;
-                            remainingCum.Add(running);
-                        }
-
-                        long finalTotalMs = running;
-
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            _previewFrames.AddRange(remainingBitmaps);
-                            _cumulativePreviewEndMs.AddRange(remainingCum);
-                            _totalPreviewDurationMs = finalTotalMs;
-                            PreviewFramesUpdated?.Invoke();
-                        });
-                    });
-                }
             }
         }
         catch (Exception ex)
