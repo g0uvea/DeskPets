@@ -11,6 +11,6 @@
 
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://DeskPets.Ui/Styles/GlobalStyles.axaml" />
+        <StyleInclude Source="avares://DeskPets/Styles/GlobalStyles.axaml" />
     </Application.Styles>
 </Application>
