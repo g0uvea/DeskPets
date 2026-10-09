@@ -31,6 +31,24 @@ public partial class AssetItemViewModel : ViewModelBase
     [ObservableProperty]
     private ChromaKeyConfig? _chromaKey;
 
+    [ObservableProperty]
+    private int? _scale;
+
+    [ObservableProperty]
+    private int? _fps;
+
+    [ObservableProperty]
+    private bool _flipHorizontal;
+
+    [ObservableProperty]
+    private bool _flipVertical;
+
+    [ObservableProperty]
+    private bool _desktopInteractionEnabled;
+
+    [ObservableProperty]
+    private string? _desktopInteractionType;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [ObservableProperty]

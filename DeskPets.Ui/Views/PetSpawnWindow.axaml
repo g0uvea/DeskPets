@@ -18,20 +18,138 @@
     <!-- Janela de Pet Flutuante na Área de Trabalho (Suporte Cross-Platform: Windows, Linux e macOS) -->
     <Panel Background="Transparent">
         <Panel.ContextMenu>
-            <ContextMenu>
-                <MenuItem Header="Sempre no Topo" Click="OnToggleTopmostClick">
+            <ContextMenu Name="PetContextMenu">
+                <!-- Sempre no Topo -->
+                <MenuItem Name="MenuAlwaysOnTop" Click="OnToggleTopmostClick">
                     <MenuItem.Icon>
-                        <CheckBox IsChecked="{Binding $parent[Window].Topmost, Mode=OneWay}"
-                                  IsHitTestVisible="False" />
+                        <CheckBox Name="CheckTopmost" IsHitTestVisible="False" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Chroma Key (Fundo Transparente)" Click="OnOpenChromaKeyClick">
+
+                <!-- Escala (Submenu com presets 50%..200%) -->
+                <MenuItem Name="MenuScale">
+                    <MenuItem Name="MenuScale50" Header="50%" Click="OnSetScaleClick" CommandParameter="50">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckScale50" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuScale75" Header="75%" Click="OnSetScaleClick" CommandParameter="75">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckScale75" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuScale100" Header="100%" Click="OnSetScaleClick" CommandParameter="100">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckScale100" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuScale125" Header="125%" Click="OnSetScaleClick" CommandParameter="125">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckScale125" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuScale150" Header="150%" Click="OnSetScaleClick" CommandParameter="150">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckScale150" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuScale175" Header="175%" Click="OnSetScaleClick" CommandParameter="175">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckScale175" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuScale200" Header="200%" Click="OnSetScaleClick" CommandParameter="200">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckScale200" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+
+                <!-- Taxa de Quadros / FPS (Submenu com presets 0..60) -->
+                <MenuItem Name="MenuFps">
+                    <MenuItem Name="MenuFps0" Click="OnSetFpsClick" CommandParameter="0">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckFps0" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuFps15" Header="15 FPS" Click="OnSetFpsClick" CommandParameter="15">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckFps15" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuFps24" Header="24 FPS" Click="OnSetFpsClick" CommandParameter="24">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckFps24" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuFps30" Header="30 FPS" Click="OnSetFpsClick" CommandParameter="30">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckFps30" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuFps60" Header="60 FPS" Click="OnSetFpsClick" CommandParameter="60">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckFps60" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+
+                <Separator />
+
+                <!-- Inverter Horizontalmente (Flip Horizontal) -->
+                <MenuItem Name="MenuFlipH" Click="OnToggleFlipHClick">
+                    <MenuItem.Icon>
+                        <CheckBox Name="CheckFlipH" IsHitTestVisible="False" />
+                    </MenuItem.Icon>
+                </MenuItem>
+
+                <!-- Inverter Verticalmente (Flip Vertical) -->
+                <MenuItem Name="MenuFlipV" Click="OnToggleFlipVClick">
+                    <MenuItem.Icon>
+                        <CheckBox Name="CheckFlipV" IsHitTestVisible="False" />
+                    </MenuItem.Icon>
+                </MenuItem>
+
+                <Separator />
+
+                <!-- Chroma Key -->
+                <MenuItem Name="MenuChromaKey" Click="OnOpenChromaKeyClick">
                     <MenuItem.Icon>
                         <TextBlock Text="🪄" FontSize="13" />
                     </MenuItem.Icon>
                 </MenuItem>
+
+                <!-- Interação com o Desktop (EXTRA) -->
+                <MenuItem Name="MenuDesktopInteraction">
+                    <!-- Toggle Ativar Interação -->
+                    <MenuItem Name="MenuInteractionToggle" Click="OnToggleInteractionClick">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckInteractionEnabled" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <!-- Modos -->
+                    <MenuItem Name="MenuModeDvd" Click="OnSelectInteractionModeClick" CommandParameter="DVD">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckModeDvd" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuModeWander" Click="OnSelectInteractionModeClick" CommandParameter="WANDER">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckModeWander" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="MenuModeMischief" Click="OnSelectInteractionModeClick" CommandParameter="MISCHIEF">
+                        <MenuItem.Icon>
+                            <CheckBox Name="CheckModeMischief" IsHitTestVisible="False" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+
                 <Separator />
-                <MenuItem Header="Fechar este Pet" Click="OnClosePetClick">
+
+                <!-- Fechar este Pet -->
+                <MenuItem Name="MenuClosePet" Click="OnClosePetClick">
                     <MenuItem.Icon>
                         <TextBlock Text="❌" FontSize="12" />
                     </MenuItem.Icon>
@@ -44,7 +162,12 @@
             Stretch="Uniform"
             RenderOptions.BitmapInterpolationMode="HighQuality"
             HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch" />
+            VerticalAlignment="Stretch"
+            RenderTransformOrigin="50%,50%">
+            <Image.RenderTransform>
+                <ScaleTransform ScaleX="1" ScaleY="1" />
+            </Image.RenderTransform>
+        </Image>
 
         <!-- Ícone Fallback caso ainda não haja imagem -->
         <TextBlock

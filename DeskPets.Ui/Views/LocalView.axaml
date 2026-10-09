@@ -6,7 +6,20 @@
     x:Name="LocalRoot"
     x:DataType="vm:MainViewModel">
 
-    <Grid>
+    <Grid Background="Transparent">
+        <!-- Menu de Contexto da Área Local (Clique com Botão Direito na biblioteca) -->
+        <Grid.ContextMenu>
+            <ContextMenu>
+                <MenuItem
+                    Header="{Binding AddPetMenuText}"
+                    Click="OnAddPetContextMenuClick">
+                    <MenuItem.Icon>
+                        <TextBlock Text="➕" FontSize="14" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </ContextMenu>
+        </Grid.ContextMenu>
+
         <!-- Empty State (quando ainda não há pets importados) -->
         <Border
             IsVisible="{Binding !Assets.Count}"
@@ -69,7 +82,7 @@
                             Command="{Binding #LocalRoot.((vm:MainViewModel)DataContext).SelectAssetCommand}"
                             CommandParameter="{Binding}">
 
-                            <!-- Menu de Contexto (Clique com o Botão Direito) -->
+                            <!-- Menu de Contexto (Clique com o Botão Direito no Card) -->
                             <Button.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem
@@ -86,6 +99,14 @@
                                         CommandParameter="{Binding}">
                                         <MenuItem.Icon>
                                             <TextBlock Text="🗑️" FontSize="14" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <Separator />
+                                    <MenuItem
+                                        Header="{Binding #LocalRoot.((vm:MainViewModel)DataContext).AddPetMenuText}"
+                                        Click="OnAddPetContextMenuClick">
+                                        <MenuItem.Icon>
+                                            <TextBlock Text="➕" FontSize="14" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                 </ContextMenu>

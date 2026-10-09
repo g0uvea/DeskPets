@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -17,7 +18,12 @@ namespace DeskPets.Ui.Views;
 
 public partial class PetSpawnWindow : Window
 {
-  private const double BasePetSize = 600.0;
+  private double _basePetWidth = 600.0;
+  private double _basePetHeight = 600.0;
+  private bool _flipH = false;
+  private bool _flipV = false;
+  private bool _desktopInteractionEnabled = false;
+  private string _desktopInteractionType = "DVD";
   private static int _spawnOffsetCounter = 0;
 
   private readonly struct AnimationPlaybackFrame
@@ -69,7 +75,7 @@ public partial class PetSpawnWindow : Window
       LoadingText.Text = _language switch
       {
         "English" => "Loading...",
-        "Español" => "Cargando...",
+        "日本語" => "読み込み中...",
         _ => "Carregando..."
       };
 
@@ -104,18 +110,25 @@ public partial class PetSpawnWindow : Window
       AssetItemViewModel pet,
       int fps,
       int scale,
+      int baseWidth,
+      int baseHeight,
       bool isAlwaysOnTop,
-      bool enableAnimations,
       Action? onSavePetsRequested = null,
       string language = "Português") : this()
   {
     Pet = pet;
     _fps = Math.Clamp(fps, 0, 60);
-    IsAnimationsEnabled = enableAnimations;
     Topmost = isAlwaysOnTop;
     _onSavePetsRequested = onSavePetsRequested;
     _language = language;
     _currentScale = scale;
+    _basePetWidth = Math.Clamp(baseWidth, 200, 1000);
+    _basePetHeight = Math.Clamp(baseHeight, 200, 1000);
+
+    _flipH = pet.FlipHorizontal;
+    _flipV = pet.FlipVertical;
+    _desktopInteractionEnabled = pet.DesktopInteractionEnabled;
+    _desktopInteractionType = !string.IsNullOrEmpty(pet.DesktopInteractionType) ? pet.DesktopInteractionType : "DVD";
 
     // Detecta proporção (aspect ratio) da mídia para crop perfeito da janela
     if (pet.Thumbnail != null && pet.Thumbnail.PixelSize.Height > 0)
@@ -133,6 +146,11 @@ public partial class PetSpawnWindow : Window
 
     // Aplica o crop exato da janela mantendo a escala configurada ampla
     ApplyWindowSize(_currentScale);
+
+    // Aplica flips e menu
+    UpdateFlipTransforms();
+    UpdateContextMenuUi();
+    SetupDesktopInteraction();
 
     // Exibe thumbnail ou ícone fallback
     if (pet.Thumbnail != null)
@@ -154,38 +172,39 @@ public partial class PetSpawnWindow : Window
 
   /// <summary>
   /// Aplica as dimensões da janela rigorosamente recortadas (crop) de acordo com a proporção do vídeo/imagem.
-  /// A maior dimensão respeita o tamanho base e a escala, garantindo que o pet fique grande e nítido
+  /// Respeita o tamanho base configurado e a escala, garantindo que o pet fique grande e nítido
   /// sem nenhuma área transparente ociosa nas laterais ou topo/fundo que bloqueie cliques no desktop.
   /// </summary>
   private void ApplyWindowSize(int scale)
   {
-    int targetBound = Math.Max(64, (int)(BasePetSize * scale / 100.0));
+    double targetW = Math.Max(64, _basePetWidth * scale / 100.0);
+    double targetH = Math.Max(64, _basePetHeight * scale / 100.0);
     int finalW, finalH;
 
     if (_aspectRatio <= 0.001)
     {
-      finalW = targetBound;
-      finalH = targetBound;
+      finalW = (int)targetW;
+      finalH = (int)targetH;
     }
     else if (_aspectRatio < 1.0)
     {
       // Mídia Vertical (ex: Shorts 9:16)
-      // A altura preenche o targetBound e a largura é ajustada na proporção exata
-      finalH = targetBound;
-      finalW = Math.Max(48, (int)Math.Round(targetBound * _aspectRatio));
+      // A altura preenche targetH e a largura é ajustada na proporção exata
+      finalH = (int)targetH;
+      finalW = Math.Max(48, (int)Math.Round(targetH * _aspectRatio));
     }
     else if (_aspectRatio > 1.0)
     {
       // Mídia Horizontal (ex: Widescreen 16:9)
-      // A largura preenche o targetBound e a altura é ajustada na proporção exata
-      finalW = targetBound;
-      finalH = Math.Max(48, (int)Math.Round(targetBound / _aspectRatio));
+      // A largura preenche targetW e a altura é ajustada na proporção exata
+      finalW = (int)targetW;
+      finalH = Math.Max(48, (int)Math.Round(targetW / _aspectRatio));
     }
     else
     {
       // Mídia Quadrada (1:1)
-      finalW = targetBound;
-      finalH = targetBound;
+      finalW = (int)targetW;
+      finalH = (int)targetH;
     }
 
     Width = finalW;
@@ -670,12 +689,442 @@ public partial class PetSpawnWindow : Window
   private void OnToggleTopmostClick(object? sender, RoutedEventArgs e)
   {
     Topmost = !Topmost;
+    UpdateContextMenuUi();
   }
+
+  private void OnSetScaleClick(object? sender, RoutedEventArgs e)
+  {
+    if (sender is MenuItem item && int.TryParse(item.CommandParameter?.ToString(), out int scale))
+    {
+      _currentScale = scale;
+      ApplyWindowSize(_currentScale);
+      if (Pet != null)
+      {
+        Pet.Scale = scale;
+        _onSavePetsRequested?.Invoke();
+      }
+      UpdateContextMenuUi();
+    }
+  }
+
+  private void OnSetFpsClick(object? sender, RoutedEventArgs e)
+  {
+    if (sender is MenuItem item && int.TryParse(item.CommandParameter?.ToString(), out int fps))
+    {
+      UpdateFps(fps);
+      if (Pet != null)
+      {
+        Pet.Fps = fps;
+        _onSavePetsRequested?.Invoke();
+      }
+      UpdateContextMenuUi();
+    }
+  }
+
+  private void OnToggleFlipHClick(object? sender, RoutedEventArgs e)
+  {
+    _flipH = !_flipH;
+    UpdateFlipTransforms();
+    if (Pet != null)
+    {
+      Pet.FlipHorizontal = _flipH;
+      _onSavePetsRequested?.Invoke();
+    }
+    UpdateContextMenuUi();
+  }
+
+  private void OnToggleFlipVClick(object? sender, RoutedEventArgs e)
+  {
+    _flipV = !_flipV;
+    UpdateFlipTransforms();
+    if (Pet != null)
+    {
+      Pet.FlipVertical = _flipV;
+      _onSavePetsRequested?.Invoke();
+    }
+    UpdateContextMenuUi();
+  }
+
+  private void OnToggleInteractionClick(object? sender, RoutedEventArgs e)
+  {
+    _desktopInteractionEnabled = !_desktopInteractionEnabled;
+    if (Pet != null)
+    {
+      Pet.DesktopInteractionEnabled = _desktopInteractionEnabled;
+      _onSavePetsRequested?.Invoke();
+    }
+    SetupDesktopInteraction();
+    UpdateContextMenuUi();
+  }
+
+  private void OnSelectInteractionModeClick(object? sender, RoutedEventArgs e)
+  {
+    if (sender is MenuItem item && item.CommandParameter is string mode)
+    {
+      _desktopInteractionType = mode;
+      _desktopInteractionEnabled = true;
+      if (Pet != null)
+      {
+        Pet.DesktopInteractionType = mode;
+        Pet.DesktopInteractionEnabled = true;
+        _onSavePetsRequested?.Invoke();
+      }
+      SetupDesktopInteraction();
+      UpdateContextMenuUi();
+    }
+  }
+
+  private void UpdateFlipTransforms()
+  {
+    if (PetImage?.RenderTransform is ScaleTransform st)
+    {
+      st.ScaleX = _flipH ? -1.0 : 1.0;
+      st.ScaleY = _flipV ? -1.0 : 1.0;
+    }
+    else if (PetImage != null)
+    {
+      PetImage.RenderTransform = new ScaleTransform(_flipH ? -1.0 : 1.0, _flipV ? -1.0 : 1.0);
+    }
+    if (CheckFlipH != null) CheckFlipH.IsChecked = _flipH;
+    if (CheckFlipV != null) CheckFlipV.IsChecked = _flipV;
+  }
+
+  private void UpdateContextMenuUi()
+  {
+    if (MenuAlwaysOnTop == null) return;
+
+    MenuAlwaysOnTop.Header = _language switch
+    {
+      "English" => "Always on Top",
+      "日本語" => "常に最前面に表示",
+      _ => "Sempre no Topo"
+    };
+
+    MenuScale.Header = _language switch
+    {
+      "English" => "Scale",
+      "日本語" => "拡大率",
+      _ => "Escala"
+    };
+
+    MenuFps.Header = _language switch
+    {
+      "English" => "Frame Rate (FPS)",
+      "日本語" => "フレームレート (FPS)",
+      _ => "Taxa de Quadros (FPS)"
+    };
+
+    MenuFps0.Header = _language switch
+    {
+      "English" => "0 FPS (Pause)",
+      "日本語" => "0 FPS (一時停止)",
+      _ => "0 FPS (Pausar)"
+    };
+
+    MenuFlipH.Header = _language switch
+    {
+      "English" => "Flip Horizontal",
+      "日本語" => "左右反転",
+      _ => "Inverter Horizontalmente"
+    };
+
+    MenuFlipV.Header = _language switch
+    {
+      "English" => "Flip Vertical",
+      "日本語" => "上下反転",
+      _ => "Inverter Verticalmente"
+    };
+
+    MenuChromaKey.Header = _language switch
+    {
+      "English" => "Chroma Key (Transparent Background)",
+      "日本語" => "クロマキー (背景透過)",
+      _ => "Chroma Key (Fundo Transparente)"
+    };
+
+    MenuDesktopInteraction.Header = _language switch
+    {
+      "English" => "Desktop Interaction",
+      "日本語" => "デスクトップ操作",
+      _ => "Interação com o Desktop"
+    };
+
+    MenuInteractionToggle.Header = _language switch
+    {
+      "English" => "Enable Interaction",
+      "日本語" => "操作を有効化",
+      _ => "Ativar Interação"
+    };
+
+    MenuModeDvd.Header = _language switch
+    {
+      "English" => "Bounce Screen (DVD Style)",
+      "日本語" => "画面バウンド (DVD風)",
+      _ => "Quicar na Tela (Sinal de DVD)"
+    };
+
+    MenuModeWander.Header = _language switch
+    {
+      "English" => "Wander Screen (Random)",
+      "日本語" => "画面を散歩 (ランダム)",
+      _ => "Passear pela Tela (Aleatório)"
+    };
+
+    MenuModeMischief.Header = _language switch
+    {
+      "English" => "Mischief Mode (Move Mouse)",
+      "日本語" => "いたずらモード (マウス移動)",
+      _ => "Modo Travessura (Mover Mouse)"
+    };
+
+    MenuClosePet.Header = _language switch
+    {
+      "English" => "Close this Pet",
+      "日本語" => "このペットを閉じる",
+      _ => "Fechar este Pet"
+    };
+
+    if (CheckTopmost != null) CheckTopmost.IsChecked = Topmost;
+
+    if (CheckScale50 != null) CheckScale50.IsChecked = _currentScale == 50;
+    if (CheckScale75 != null) CheckScale75.IsChecked = _currentScale == 75;
+    if (CheckScale100 != null) CheckScale100.IsChecked = _currentScale == 100;
+    if (CheckScale125 != null) CheckScale125.IsChecked = _currentScale == 125;
+    if (CheckScale150 != null) CheckScale150.IsChecked = _currentScale == 150;
+    if (CheckScale175 != null) CheckScale175.IsChecked = _currentScale == 175;
+    if (CheckScale200 != null) CheckScale200.IsChecked = _currentScale == 200;
+
+    if (CheckFps0 != null) CheckFps0.IsChecked = _fps == 0;
+    if (CheckFps15 != null) CheckFps15.IsChecked = _fps == 15;
+    if (CheckFps24 != null) CheckFps24.IsChecked = _fps == 24;
+    if (CheckFps30 != null) CheckFps30.IsChecked = _fps == 30;
+    if (CheckFps60 != null) CheckFps60.IsChecked = _fps == 60;
+
+    if (CheckFlipH != null) CheckFlipH.IsChecked = _flipH;
+    if (CheckFlipV != null) CheckFlipV.IsChecked = _flipV;
+
+    if (CheckInteractionEnabled != null) CheckInteractionEnabled.IsChecked = _desktopInteractionEnabled;
+    if (CheckModeDvd != null) CheckModeDvd.IsChecked = _desktopInteractionType == "DVD";
+    if (CheckModeWander != null) CheckModeWander.IsChecked = _desktopInteractionType == "WANDER";
+    if (CheckModeMischief != null) CheckModeMischief.IsChecked = _desktopInteractionType == "MISCHIEF";
+
+    MenuModeDvd.IsEnabled = _desktopInteractionEnabled;
+    MenuModeWander.IsEnabled = _desktopInteractionEnabled;
+    MenuModeMischief.IsEnabled = _desktopInteractionEnabled;
+  }
+
+  // === Desktop Interaction Implementation ===
+  private DispatcherTimer? _interactionTimer;
+  private double _interactionVx = 3.0;
+  private double _interactionVy = 2.5;
+  private double _interactionPosX;
+  private double _interactionPosY;
+  private PixelPoint? _wanderTarget;
+  private DateTime _wanderIdleUntil = DateTime.MinValue;
+  private DateTime _lastMischiefAction = DateTime.UtcNow;
+  private readonly Random _random = new();
+
+  private void SetupDesktopInteraction()
+  {
+    _interactionTimer?.Stop();
+    if (!_desktopInteractionEnabled) return;
+
+    _interactionPosX = Position.X;
+    _interactionPosY = Position.Y;
+
+    _interactionTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(20), DispatcherPriority.Render, OnInteractionTick);
+    _interactionTimer.Start();
+  }
+
+  private void OnInteractionTick(object? sender, EventArgs e)
+  {
+    if (!_desktopInteractionEnabled || _isManualDragging)
+    {
+      _interactionPosX = Position.X;
+      _interactionPosY = Position.Y;
+      return;
+    }
+
+    var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+    if (screen == null) return;
+    var wa = screen.WorkingArea;
+    double scale = screen.Scaling > 0 ? screen.Scaling : 1.0;
+    int petW = (int)(Width * scale);
+    int petH = (int)(Height * scale);
+
+    switch (_desktopInteractionType)
+    {
+      case "DVD":
+        TickDvdBounce(wa, petW, petH);
+        break;
+      case "WANDER":
+        TickWander(wa, petW, petH);
+        break;
+      case "MISCHIEF":
+        TickMischief(wa, petW, petH);
+        break;
+    }
+  }
+
+  private void TickDvdBounce(PixelRect wa, int petW, int petH)
+  {
+    _interactionPosX += _interactionVx;
+    _interactionPosY += _interactionVy;
+
+    if (_interactionPosX <= wa.X)
+    {
+      _interactionPosX = wa.X;
+      _interactionVx = Math.Abs(_interactionVx);
+    }
+    else if (_interactionPosX + petW >= wa.X + wa.Width)
+    {
+      _interactionPosX = wa.X + wa.Width - petW;
+      _interactionVx = -Math.Abs(_interactionVx);
+    }
+
+    if (_interactionPosY <= wa.Y)
+    {
+      _interactionPosY = wa.Y;
+      _interactionVy = Math.Abs(_interactionVy);
+    }
+    else if (_interactionPosY + petH >= wa.Y + wa.Height)
+    {
+      _interactionPosY = wa.Y + wa.Height - petH;
+      _interactionVy = -Math.Abs(_interactionVy);
+    }
+
+    Position = new PixelPoint((int)_interactionPosX, (int)_interactionPosY);
+  }
+
+  private void TickWander(PixelRect wa, int petW, int petH)
+  {
+    if (DateTime.UtcNow < _wanderIdleUntil)
+    {
+      return;
+    }
+
+    if (_wanderTarget == null)
+    {
+      int minX = wa.X + 20;
+      int maxX = Math.Max(minX + 1, wa.X + wa.Width - petW - 20);
+      int minY = wa.Y + 20;
+      int maxY = Math.Max(minY + 1, wa.Y + wa.Height - petH - 20);
+
+      _wanderTarget = new PixelPoint(_random.Next(minX, maxX), _random.Next(minY, maxY));
+    }
+
+    double dx = _wanderTarget.Value.X - _interactionPosX;
+    double dy = _wanderTarget.Value.Y - _interactionPosY;
+    double dist = Math.Sqrt(dx * dx + dy * dy);
+
+    if (dist < 6.0)
+    {
+      _interactionPosX = _wanderTarget.Value.X;
+      _interactionPosY = _wanderTarget.Value.Y;
+      Position = new PixelPoint((int)_interactionPosX, (int)_interactionPosY);
+      _wanderTarget = null;
+      _wanderIdleUntil = DateTime.UtcNow.AddSeconds(_random.Next(2, 6));
+      return;
+    }
+
+    double speed = 2.5;
+    double stepX = (dx / dist) * speed;
+    double stepY = (dy / dist) * speed;
+
+    _interactionPosX += stepX;
+    _interactionPosY += stepY;
+    Position = new PixelPoint((int)_interactionPosX, (int)_interactionPosY);
+  }
+
+  private void TickMischief(PixelRect wa, int petW, int petH)
+  {
+    if ((DateTime.UtcNow - _lastMischiefAction).TotalSeconds > 5.0)
+    {
+      _lastMischiefAction = DateTime.UtcNow;
+
+      int minX = wa.X + 30;
+      int maxX = Math.Max(minX + 1, wa.X + wa.Width - petW - 30);
+      int minY = wa.Y + 30;
+      int maxY = Math.Max(minY + 1, wa.Y + wa.Height - petH - 30);
+
+      _interactionPosX = _random.Next(minX, maxX);
+      _interactionPosY = _random.Next(minY, maxY);
+      Position = new PixelPoint((int)_interactionPosX, (int)_interactionPosY);
+
+      TryWarpMouse((int)_interactionPosX + petW / 2, (int)_interactionPosY + petH / 2);
+    }
+  }
+
+  protected override void OnPointerEntered(PointerEventArgs e)
+  {
+    base.OnPointerEntered(e);
+    if (_desktopInteractionEnabled && _desktopInteractionType == "MISCHIEF")
+    {
+      var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+      if (screen != null)
+      {
+        var wa = screen.WorkingArea;
+        double scale = screen.Scaling > 0 ? screen.Scaling : 1.0;
+        int petW = (int)(Width * scale);
+        int petH = (int)(Height * scale);
+        _interactionPosX = Math.Clamp(_interactionPosX + _random.Next(-200, 200), wa.X, wa.X + wa.Width - petW);
+        _interactionPosY = Math.Clamp(_interactionPosY + _random.Next(-150, 150), wa.Y, wa.Y + wa.Height - petH);
+        Position = new PixelPoint((int)_interactionPosX, (int)_interactionPosY);
+      }
+    }
+  }
+
+  private void TryWarpMouse(int targetX, int targetY)
+  {
+    try
+    {
+      if (OperatingSystem.IsWindows())
+      {
+        SetCursorPos(targetX, targetY);
+      }
+      else if (OperatingSystem.IsLinux())
+      {
+        IntPtr display = XOpenDisplay(null);
+        if (display != IntPtr.Zero)
+        {
+          try
+          {
+            XWarpPointer(display, IntPtr.Zero, IntPtr.Zero, 0, 0, 0, 0, targetX, targetY);
+            XFlush(display);
+          }
+          finally
+          {
+            XCloseDisplay(display);
+          }
+        }
+      }
+    }
+    catch
+    {
+      // Fallback seguro se não suportado pelo ambiente/Wayland
+    }
+  }
+
+  [DllImport("user32.dll")]
+  private static extern bool SetCursorPos(int X, int Y);
+
+  [DllImport("libX11.so.6")]
+  private static extern IntPtr XOpenDisplay(string? display_name);
+
+  [DllImport("libX11.so.6")]
+  private static extern int XWarpPointer(IntPtr display, IntPtr src_w, IntPtr dest_w, int src_x, int src_y, uint src_width, uint src_height, int dest_x, int dest_y);
+
+  [DllImport("libX11.so.6")]
+  private static extern int XFlush(IntPtr display);
+
+  [DllImport("libX11.so.6")]
+  private static extern int XCloseDisplay(IntPtr display);
 
   private void OnClosePetClick(object? sender, RoutedEventArgs e)
   {
     _animationTimer?.Stop();
     _spinnerTimer?.Stop();
+    _interactionTimer?.Stop();
     Close();
   }
 
@@ -689,6 +1138,7 @@ public partial class PetSpawnWindow : Window
     _playbackStopwatch.Stop();
     _animationTimer?.Stop();
     _spinnerTimer?.Stop();
+    _interactionTimer?.Stop();
 
     _animationFrames.Clear();
     _cumulativeFrameEndMs.Clear();

@@ -29,27 +29,18 @@
                                 Foreground="#8F7EA9" />
                         </StackPanel>
 
-                        <!-- Input Numérico Manual + Badge FPS -->
+                        <!-- Badge Indicador de FPS -->
                         <Border
                             Grid.Column="1"
                             Background="#352D46"
                             CornerRadius="8"
-                            Padding="6,3"
+                            Padding="12,5"
                             VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBox
-                                    Classes="fps-input"
-                                    Text="{Binding FpsInputText}"
-                                    MaxLength="2"
-                                    ToolTip.Tip="Digite qualquer valor de 0 a 60 FPS" />
-                                <TextBlock
-                                    Text="FPS"
-                                    FontSize="12"
-                                    FontWeight="Bold"
-                                    Foreground="#EADBFF"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,4,0" />
-                            </StackPanel>
+                            <TextBlock
+                                Text="{Binding Fps, StringFormat='{}{0} FPS'}"
+                                FontSize="13"
+                                FontWeight="Bold"
+                                Foreground="#EADBFF" />
                         </Border>
                     </Grid>
 
@@ -117,9 +108,9 @@
                 </Grid>
             </Border>
 
-            <!-- Card 2: Tamanho Inicial dos Pets -->
+            <!-- Card 2: Tamanho Base e Escala dos Pets -->
             <Border Classes="setting-card">
-                <Grid RowDefinitions="Auto, Auto">
+                <Grid RowDefinitions="Auto, Auto, Auto">
                     <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
                         <StackPanel Grid.Column="0" Spacing="3">
                             <TextBlock
@@ -175,10 +166,77 @@
                             VerticalAlignment="Center"
                             Margin="10,0,0,0" />
                     </Grid>
+
+                    <!-- Inputs de Dimensões Base (Largura e Altura: 200 a 1000 px, padrão 600x600) -->
+                    <Grid Grid.Row="2" ColumnDefinitions="*, *" Margin="0,14,0,0">
+                        <!-- Largura Base -->
+                        <Border
+                            Grid.Column="0"
+                            Background="#251F31"
+                            BorderBrush="#352D46"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10,8"
+                            Margin="0,0,6,0">
+                            <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                                <TextBlock
+                                    Grid.Column="0"
+                                    Text="{Binding BaseWidthTitle}"
+                                    FontSize="12"
+                                    Foreground="#8F7EA9"
+                                    VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                    <TextBox
+                                        Classes="dim-input"
+                                        Text="{Binding PetBaseWidthText}"
+                                        MaxLength="4"
+                                        ToolTip.Tip="Largura base (200 - 1000 px)" />
+                                    <TextBlock
+                                        Text="px"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Foreground="#8F7EA9"
+                                        VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Altura Base -->
+                        <Border
+                            Grid.Column="1"
+                            Background="#251F31"
+                            BorderBrush="#352D46"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10,8"
+                            Margin="6,0,0,0">
+                            <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                                <TextBlock
+                                    Grid.Column="0"
+                                    Text="{Binding BaseHeightTitle}"
+                                    FontSize="12"
+                                    Foreground="#8F7EA9"
+                                    VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                    <TextBox
+                                        Classes="dim-input"
+                                        Text="{Binding PetBaseHeightText}"
+                                        MaxLength="4"
+                                        ToolTip.Tip="Altura base (200 - 1000 px)" />
+                                    <TextBlock
+                                        Text="px"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Foreground="#8F7EA9"
+                                        VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </Grid>
             </Border>
 
-            <!-- Card 3: Idioma (Português / English) -->
+            <!-- Card 3: Idioma (Português / English / 日本語) -->
             <Border Classes="setting-card">
                 <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
                     <StackPanel Grid.Column="0" Spacing="3">
@@ -206,7 +264,7 @@
                                 Classes="tab-pill"
                                 Classes.tab-pill-active="{Binding IsPortugueseSelected}"
                                 Classes.tab-pill-inactive="{Binding !IsPortugueseSelected}"
-                                MinWidth="95"
+                                MinWidth="80"
                                 Height="28"
                                 FontSize="11"
                                 Command="{Binding SelectLanguageCommand}"
@@ -217,12 +275,23 @@
                                 Classes="tab-pill"
                                 Classes.tab-pill-active="{Binding IsEnglishSelected}"
                                 Classes.tab-pill-inactive="{Binding !IsEnglishSelected}"
-                                MinWidth="95"
+                                MinWidth="75"
                                 Height="28"
                                 FontSize="11"
                                 Command="{Binding SelectLanguageCommand}"
                                 CommandParameter="English"
                                 Content="English" />
+
+                            <Button
+                                Classes="tab-pill"
+                                Classes.tab-pill-active="{Binding IsJapaneseSelected}"
+                                Classes.tab-pill-inactive="{Binding !IsJapaneseSelected}"
+                                MinWidth="75"
+                                Height="28"
+                                FontSize="11"
+                                Command="{Binding SelectLanguageCommand}"
+                                CommandParameter="日本語"
+                                Content="日本語" />
                         </StackPanel>
                     </Border>
                 </Grid>

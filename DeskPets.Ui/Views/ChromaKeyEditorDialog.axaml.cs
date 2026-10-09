@@ -109,6 +109,20 @@ public partial class ChromaKeyEditorDialog : Window
             CancelBtnText.Text = "Cancel";
             SaveBtnText.Text = "Save & Apply";
         }
+        else if (language == "日本語")
+        {
+            TitleText.Text = "クロマキー (背景透過)";
+            SubtitleText.Text = "スポイトで画像をクリックして背景色を除去";
+            EyedropperHintText.Text = "🎯 クリックして色を抽出";
+            ColorLabelText.Text = "選択された透過色";
+            EnableChromaCheckBox.Content = "有効";
+            ToleranceLabel.Text = "許容範囲 (Tolerance)";
+            SmoothnessLabel.Text = "境界のスムージング";
+            DisableBtnText.Text = "エフェクトを無効化";
+            ResetBtnText.Text = "↺ リセット";
+            CancelBtnText.Text = "キャンセル";
+            SaveBtnText.Text = "保存して適用";
+        }
         else
         {
             DisableBtnText.Text = "Desativar Efeito";

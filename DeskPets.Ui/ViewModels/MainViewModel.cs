@@ -51,10 +51,19 @@ public partial class MainViewModel : ViewModelBase
     private int _fpsSliderIndex = 4; // index 4 = 60 FPS
 
     [ObservableProperty]
-    private string _fpsInputText = "60";
+    private int _petScale = 100;
 
     [ObservableProperty]
-    private int _petScale = 100;
+    private int _petBaseWidth = 600;
+
+    [ObservableProperty]
+    private int _petBaseHeight = 600;
+
+    [ObservableProperty]
+    private string _petBaseWidthText = "600";
+
+    [ObservableProperty]
+    private string _petBaseHeightText = "600";
 
     [ObservableProperty]
     private bool _isAlwaysOnTop = false;
@@ -68,6 +77,7 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPortugueseSelected))]
     [NotifyPropertyChangedFor(nameof(IsEnglishSelected))]
+    [NotifyPropertyChangedFor(nameof(IsJapaneseSelected))]
     [NotifyPropertyChangedFor(nameof(TabLocalText))]
     [NotifyPropertyChangedFor(nameof(TabShopText))]
     [NotifyPropertyChangedFor(nameof(TabOptionsText))]
@@ -75,6 +85,8 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(FpsSubtitle))]
     [NotifyPropertyChangedFor(nameof(PetScaleTitle))]
     [NotifyPropertyChangedFor(nameof(PetScaleSubtitle))]
+    [NotifyPropertyChangedFor(nameof(BaseWidthTitle))]
+    [NotifyPropertyChangedFor(nameof(BaseHeightTitle))]
     [NotifyPropertyChangedFor(nameof(LanguageTitle))]
     [NotifyPropertyChangedFor(nameof(LanguageSubtitle))]
     [NotifyPropertyChangedFor(nameof(AlwaysOnTopTitle))]
@@ -87,58 +99,91 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(EmptyLocalMessage))]
     [NotifyPropertyChangedFor(nameof(SpawnPetMenuText))]
     [NotifyPropertyChangedFor(nameof(RemovePetMenuText))]
+    [NotifyPropertyChangedFor(nameof(AddPetMenuText))]
     private string _selectedLanguage = "Português";
 
     public bool IsPortugueseSelected => SelectedLanguage == "Português";
     public bool IsEnglishSelected => SelectedLanguage == "English";
+    public bool IsJapaneseSelected => SelectedLanguage == "日本語";
 
     // Textos Dinâmicos de Localização
-    public string TabLocalText => SelectedLanguage == "Português" ? "LOCAL" : "LOCAL";
-    public string TabShopText => SelectedLanguage == "Português" ? "LOJA" : "SHOP";
-    public string TabOptionsText => SelectedLanguage == "Português" ? "OPÇÕES" : "OPTIONS";
+    public string TabLocalText => SelectedLanguage switch { "English" => "LOCAL", "日本語" => "ローカル", _ => "LOCAL" };
+    public string TabShopText => SelectedLanguage switch { "English" => "SHOP", "日本語" => "ショップ", _ => "LOJA" };
+    public string TabOptionsText => SelectedLanguage switch { "English" => "OPTIONS", "日本語" => "設定", _ => "OPÇÕES" };
 
-    public string FpsTitle => SelectedLanguage == "Português" ? "Taxa de Quadros (FPS)" : "Frame Rate (FPS)";
-    public string FpsSubtitle => SelectedLanguage == "Português"
-        ? "Limite de 0 a 60 FPS (paradas: 0, 15, 24, 30 e 60)"
-        : "Limit from 0 to 60 FPS (stops: 0, 15, 24, 30, and 60)";
+    public string FpsTitle => SelectedLanguage switch { "English" => "Frame Rate (FPS)", "日本語" => "フレームレート (FPS)", _ => "Taxa de Quadros (FPS)" };
+    public string FpsSubtitle => SelectedLanguage switch
+    {
+        "English" => "Limit from 0 to 60 FPS (stops: 0, 15, 24, 30, and 60)",
+        "日本語" => "0〜60 FPSの上限 (停止位置: 0, 15, 24, 30, 60)",
+        _ => "Limite de 0 a 60 FPS (paradas: 0, 15, 24, 30 e 60)"
+    };
 
-    public string PetScaleTitle => SelectedLanguage == "Português" ? "Tamanho Inicial dos Pets" : "Initial Pet Size";
-    public string PetScaleSubtitle => SelectedLanguage == "Português"
-        ? "Escala padrão aplicada quando um pet for invocado na tela"
-        : "Default scale applied when spawning a pet on screen";
+    public string PetScaleTitle => SelectedLanguage switch { "English" => "Initial Pet Size & Scale", "日本語" => "初期サイズと拡大率", _ => "Tamanho e Escala Inicial" };
+    public string PetScaleSubtitle => SelectedLanguage switch
+    {
+        "English" => "Default size and scale applied when spawning a pet on screen",
+        "日本語" => "画面にペットを召喚する際のデフォルトサイズと拡大率",
+        _ => "Dimensões base e escala padrão aplicadas ao invocar o pet na tela"
+    };
 
-    public string LanguageTitle => SelectedLanguage == "Português" ? "Idioma do Aplicativo" : "Application Language";
-    public string LanguageSubtitle => SelectedLanguage == "Português"
-        ? "Selecione o idioma da interface"
-        : "Select the interface language";
+    public string BaseWidthTitle => SelectedLanguage switch { "English" => "Base Width (px)", "日本語" => "基本の幅 (px)", _ => "Largura Base (px)" };
+    public string BaseHeightTitle => SelectedLanguage switch { "English" => "Base Height (px)", "日本語" => "基本の高さ (px)", _ => "Altura Base (px)" };
 
-    public string AlwaysOnTopTitle => SelectedLanguage == "Português" ? "Pets Sempre no Topo" : "Pets Always on Top";
-    public string AlwaysOnTopSubtitle => SelectedLanguage == "Português"
-        ? "Manter os pets sobrepostos a outros aplicativos na área de trabalho"
-        : "Keep pets floating above other applications on the desktop";
+    public string LanguageTitle => SelectedLanguage switch { "English" => "Application Language", "日本語" => "アプリの言語", _ => "Idioma do Aplicativo" };
+    public string LanguageSubtitle => SelectedLanguage switch
+    {
+        "English" => "Select the interface language",
+        "日本語" => "インターフェースの言語を選択",
+        _ => "Selecione o idioma da interface"
+    };
 
-    public string AnimationsTitle => SelectedLanguage == "Português" ? "Animações na Interface" : "Interface Animations";
-    public string AnimationsSubtitle => SelectedLanguage == "Português"
-        ? "Ativar transições suaves e efeitos visuais"
-        : "Enable smooth transitions and visual effects";
+    public string AlwaysOnTopTitle => SelectedLanguage switch { "English" => "Pets Always on Top", "日本語" => "常に最前面に表示", _ => "Pets Sempre no Topo" };
+    public string AlwaysOnTopSubtitle => SelectedLanguage switch
+    {
+        "English" => "Keep pets floating above other applications on the desktop",
+        "日本語" => "デスクトップ上の他のウィンドウの手前にペットを表示",
+        _ => "Manter os pets sobrepostos a outros aplicativos na área de trabalho"
+    };
 
-    public string AllowDuplicatePetsTitle => SelectedLanguage == "Português"
-        ? "Sumonar Pets Duplicados"
-        : "Summon Duplicate Pets";
-    public string AllowDuplicatePetsSubtitle => SelectedLanguage == "Português"
-        ? "Permite criar múltiplas cópias do mesmo pet simultaneamente na tela"
-        : "Allow spawning multiple copies of the same pet on screen at once";
+    public string AnimationsTitle => SelectedLanguage switch { "English" => "Launcher Animations", "日本語" => "ランチャーのアニメーション", _ => "Animações no Launcher" };
+    public string AnimationsSubtitle => SelectedLanguage switch
+    {
+        "English" => "Enable smooth transitions and library preview in launcher",
+        "日本語" => "ランチャー内のスムーズな遷移とライブラリのプレビューを有効化",
+        _ => "Ativar transições suaves e prévia animada no launcher"
+    };
 
-    public string ShopEmptyMessage => SelectedLanguage == "Português"
-        ? "Novos pets, skins e animações estarão disponíveis aqui em breve."
-        : "New pets, skins and animations will be available here soon.";
+    public string AllowDuplicatePetsTitle => SelectedLanguage switch
+    {
+        "English" => "Summon Duplicate Pets",
+        "日本語" => "重複ペットの召喚",
+        _ => "Sumonar Pets Duplicados"
+    };
+    public string AllowDuplicatePetsSubtitle => SelectedLanguage switch
+    {
+        "English" => "Allow spawning multiple copies of the same pet on screen at once",
+        "日本語" => "同じペットを画面上に複数召喚することを許可",
+        _ => "Permite criar múltiplas cópias do mesmo pet simultaneamente na tela"
+    };
 
-    public string EmptyLocalMessage => SelectedLanguage == "Português"
-        ? "Nenhum pet adicionado ainda.\nClique no botão azul (+) acima para importar seus pets!"
-        : "No pets added yet.\nClick the blue button (+) above to import your pets!";
+    public string ShopEmptyMessage => SelectedLanguage switch
+    {
+        "English" => "New pets, skins and animations will be available here soon.",
+        "日本語" => "新しいペット、スキン、アニメーションが近日公開予定です。",
+        _ => "Novos pets, skins e animações estarão disponíveis aqui em breve."
+    };
 
-    public string SpawnPetMenuText => SelectedLanguage == "Português" ? "Spawnar Pet na Tela" : "Spawn Pet on Screen";
-    public string RemovePetMenuText => SelectedLanguage == "Português" ? "Remover da Biblioteca" : "Remove from Library";
+    public string EmptyLocalMessage => SelectedLanguage switch
+    {
+        "English" => "No pets added yet.\nRight-click or click the blue button (+) above to import your pets!",
+        "日本語" => "ペットがまだ追加されていません。\n右クリックまたは上の青いボタン（＋）からペットをインポートしてください！",
+        _ => "Nenhum pet adicionado ainda.\nClique com o botão direito ou no botão azul (+) acima para importar seus pets!"
+    };
+
+    public string SpawnPetMenuText => SelectedLanguage switch { "English" => "Spawn Pet on Screen", "日本語" => "画面にペットを召喚", _ => "Spawnar Pet na Tela" };
+    public string RemovePetMenuText => SelectedLanguage switch { "English" => "Remove from Library", "日本語" => "ライブラリから削除", _ => "Remover da Biblioteca" };
+    public string AddPetMenuText => SelectedLanguage switch { "English" => "Import Pets...", "日本語" => "ペットをインポート...", _ => "Importar Pets..." };
 
     public MainViewModel()
     {
@@ -151,11 +196,14 @@ public partial class MainViewModel : ViewModelBase
         var settings = SettingsService.Load();
         SelectedLanguage = settings.Language ?? "Português";
         PetScale = Math.Clamp(settings.PetScale, 50, 200);
+        PetBaseWidth = Math.Clamp(settings.PetBaseWidth, 200, 1000);
+        PetBaseHeight = Math.Clamp(settings.PetBaseHeight, 200, 1000);
+        PetBaseWidthText = PetBaseWidth.ToString();
+        PetBaseHeightText = PetBaseHeight.ToString();
         IsAlwaysOnTop = settings.IsAlwaysOnTop;
         EnableAnimations = settings.EnableAnimations;
         AllowDuplicatePets = settings.AllowDuplicatePets;
         Fps = Math.Clamp(settings.Fps, 0, 60);
-        FpsInputText = Fps.ToString();
         FpsSliderIndex = FindClosestStopIndex(Fps);
 
         // 2. Carrega biblioteca de pets do pets.json
@@ -167,7 +215,13 @@ public partial class MainViewModel : ViewModelBase
             {
                 var item = new AssetItemViewModel(pet.Id, pet.Name, pet.FilePath, pet.ChromaKey)
                 {
-                    CreatedAt = pet.CreatedAt
+                    CreatedAt = pet.CreatedAt,
+                    Scale = pet.Scale,
+                    Fps = pet.Fps,
+                    FlipHorizontal = pet.FlipHorizontal,
+                    FlipVertical = pet.FlipVertical,
+                    DesktopInteractionEnabled = pet.DesktopInteractionEnabled,
+                    DesktopInteractionType = pet.DesktopInteractionType
                 };
                 Assets.Add(item);
             }
@@ -183,6 +237,8 @@ public partial class MainViewModel : ViewModelBase
         {
             Fps = Fps,
             PetScale = PetScale,
+            PetBaseWidth = PetBaseWidth,
+            PetBaseHeight = PetBaseHeight,
             Language = SelectedLanguage,
             IsAlwaysOnTop = IsAlwaysOnTop,
             EnableAnimations = EnableAnimations,
@@ -201,7 +257,13 @@ public partial class MainViewModel : ViewModelBase
             FilePath = a.FilePath,
             MediaType = a.MediaType,
             CreatedAt = a.CreatedAt,
-            ChromaKey = a.ChromaKey
+            ChromaKey = a.ChromaKey,
+            Scale = a.Scale,
+            Fps = a.Fps,
+            FlipHorizontal = a.FlipHorizontal,
+            FlipVertical = a.FlipVertical,
+            DesktopInteractionEnabled = a.DesktopInteractionEnabled,
+            DesktopInteractionType = a.DesktopInteractionType
         }).ToList();
 
         PetStorageService.SavePets(pets);
@@ -216,26 +278,32 @@ public partial class MainViewModel : ViewModelBase
             if (Fps != targetFps)
             {
                 Fps = targetFps;
-                FpsInputText = targetFps.ToString();
                 SaveSettings();
             }
         }
     }
 
-    // Mudança de FPS via Input Text
-    partial void OnFpsInputTextChanged(string value)
+    partial void OnPetBaseWidthTextChanged(string value)
     {
         if (int.TryParse(value, out int parsed))
         {
-            int clamped = Math.Clamp(parsed, 0, 60);
-            if (Fps != clamped)
+            int clamped = Math.Clamp(parsed, 200, 1000);
+            if (PetBaseWidth != clamped)
             {
-                Fps = clamped;
-                int stopIndex = FindClosestStopIndex(clamped);
-                if (FpsSliderIndex != stopIndex && FpsStops[stopIndex] == clamped)
-                {
-                    FpsSliderIndex = stopIndex;
-                }
+                PetBaseWidth = clamped;
+                SaveSettings();
+            }
+        }
+    }
+
+    partial void OnPetBaseHeightTextChanged(string value)
+    {
+        if (int.TryParse(value, out int parsed))
+        {
+            int clamped = Math.Clamp(parsed, 200, 1000);
+            if (PetBaseHeight != clamped)
+            {
+                PetBaseHeight = clamped;
                 SaveSettings();
             }
         }
@@ -318,7 +386,6 @@ public partial class MainViewModel : ViewModelBase
     private void SetFpsPreset(int fps)
     {
         Fps = Math.Clamp(fps, 0, 60);
-        FpsInputText = Fps.ToString();
         FpsSliderIndex = FindClosestStopIndex(Fps);
         SaveSettings();
     }

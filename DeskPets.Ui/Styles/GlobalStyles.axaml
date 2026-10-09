@@ -368,6 +368,27 @@
         <Setter Property="BorderBrush" Value="#8B6CCF" />
     </Style>
 
+    <!-- Custom Numeric TextBox for Base Dimensions (Width / Height) -->
+    <Style Selector="TextBox.dim-input">
+        <Setter Property="Background" Value="#352D46" />
+        <Setter Property="Foreground" Value="#EADBFF" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="Width" Value="52" />
+        <Setter Property="Height" Value="24" />
+    </Style>
+
+    <Style Selector="TextBox.dim-input:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#403754" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="#8B6CCF" />
+    </Style>
+
     <!-- Preset Stop Button com suporte a estado Ativo e melhor contraste -->
     <Style Selector="Button.stop-btn">
         <Setter Property="Background" Value="Transparent" />

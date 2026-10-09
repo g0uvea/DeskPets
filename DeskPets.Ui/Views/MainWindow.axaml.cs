@@ -33,33 +33,13 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainViewModel vm) return;
 
-        // Atualização reativa dinâmica para todos os pets ativos na área de trabalho
+        // O usuário configurou que os pets flutuantes são controlados individualmente.
+        // Apenas 'IsAlwaysOnTop' pode ser propagado globalmente caso alterado.
         if (e.PropertyName == nameof(MainViewModel.IsAlwaysOnTop))
         {
             foreach (var petWin in _activePetWindows.ToArray())
             {
                 petWin.Topmost = vm.IsAlwaysOnTop;
-            }
-        }
-        else if (e.PropertyName == nameof(MainViewModel.EnableAnimations))
-        {
-            foreach (var petWin in _activePetWindows.ToArray())
-            {
-                petWin.SetAnimationsEnabled(vm.EnableAnimations);
-            }
-        }
-        else if (e.PropertyName == nameof(MainViewModel.Fps))
-        {
-            foreach (var petWin in _activePetWindows.ToArray())
-            {
-                petWin.UpdateFps(vm.Fps);
-            }
-        }
-        else if (e.PropertyName == nameof(MainViewModel.PetScale))
-        {
-            foreach (var petWin in _activePetWindows.ToArray())
-            {
-                petWin.UpdateScale(vm.PetScale);
             }
         }
     }
@@ -80,13 +60,20 @@ public partial class MainWindow : Window
                 }
             }
 
+            // Se o pet já possuir configurações próprias salvas no pets.json, utiliza-as; caso contrário, defaults do launcher
+            int initialScale = pet.Scale ?? vm.PetScale;
+            int initialFps = pet.Fps ?? vm.Fps;
+            int baseWidth = vm.PetBaseWidth;
+            int baseHeight = vm.PetBaseHeight;
+
             PetSpawnWindow? petWindow = null;
             petWindow = new PetSpawnWindow(
                 pet,
-                vm.Fps,
-                vm.PetScale,
+                initialFps,
+                initialScale,
+                baseWidth,
+                baseHeight,
                 vm.IsAlwaysOnTop,
-                vm.EnableAnimations,
                 () =>
                 {
                     vm.SavePets();

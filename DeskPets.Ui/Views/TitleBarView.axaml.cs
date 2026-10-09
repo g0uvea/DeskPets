@@ -40,62 +40,9 @@ public partial class TitleBarView : UserControl
     private async void OnAddPetClick(object? sender, RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel == null) return;
-
-        try
+        if (DataContext is MainViewModel vm)
         {
-            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-            {
-                Title = "Selecionar Pets / Assets",
-                AllowMultiple = true,
-                FileTypeFilter = new[]
-                {
-                    new FilePickerFileType("Todos os Formatos Suportados")
-                    {
-                        Patterns = new[] { "*.png", "*.gif", "*.jpg", "*.jpeg", "*.webp", "*.bmp", "*.mp4", "*.webm", "*.mov", "*.av1", "*.mkv", "*.avi" }
-                    },
-                    new FilePickerFileType("Imagens e Animações (*.png, *.gif, *.webp, *.jpg)")
-                    {
-                        Patterns = new[] { "*.png", "*.gif", "*.jpg", "*.jpeg", "*.webp", "*.bmp" }
-                    },
-                    new FilePickerFileType("Vídeos (*.mp4, *.webm, *.mov, *.av1)")
-                    {
-                        Patterns = new[] { "*.mp4", "*.webm", "*.mov", "*.av1", "*.mkv", "*.avi" }
-                    },
-                    FilePickerFileTypes.All
-                }
-            });
-
-            if (files != null && files.Count > 0 && DataContext is MainViewModel vm)
-            {
-                var parentWindow = GetParentWindow();
-                foreach (var file in files)
-                {
-                    string name = Path.GetFileNameWithoutExtension(file.Name);
-                    string? localPath = file.TryGetLocalPath();
-
-                    // Se for vídeo, verifica a duração e avisa caso exceda 30 segundos
-                    if (!string.IsNullOrEmpty(localPath) && MediaDecoder.IsVideo(localPath))
-                    {
-                        double duration = await MediaDecoder.GetMediaDurationSecondsAsync(localPath);
-                        if (duration > 30.5 && parentWindow != null)
-                        {
-                            var dialog = new VideoDurationWarningDialog(file.Name, duration, vm.SelectedLanguage);
-                            bool proceed = await dialog.ShowDialog<bool>(parentWindow);
-                            if (!proceed)
-                            {
-                                continue; // Usuário optou por não importar este vídeo
-                            }
-                        }
-                    }
-
-                    vm.AddImportedPet(name, localPath);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro ao selecionar arquivo: {ex.Message}");
+            await DeskPets.Ui.Helpers.PetImportHelper.ImportPetsAsync(topLevel, GetParentWindow(), vm);
         }
     }
 
